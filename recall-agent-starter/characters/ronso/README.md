@@ -90,25 +90,33 @@ After testing and refining the agents locally, they can be deployed to Autonome 
 ## 📋 Agent Descriptions
 
 ### Topic Proposal Agent
+
 Collects topic suggestions from the audience, filters them based on relevance and quality, and shortlists the best ones for voting.
 
 ### Voting Manager Agent
+
 Manages the off-chain voting system for both debate topics and debate outcomes. Collects votes, tallies them accurately, and determines winners.
 
 ### Debate Moderator Agent
+
 Facilitates structured, engaging debates between two AI hosts on cryptocurrency topics. Controls debate flow, ensures equal speaking time, and maintains focus.
 
 ### DebateBotPro
+
 Advocates for the affirmative/positive position on cryptocurrency topics, constructing compelling, fact-based arguments with data from Recall Network.
 
 ### DebateBotCon
+
 Advocates for the negative/contrarian position on cryptocurrency topics, challenging common consensus with well-researched arguments.
 
 ### Audience Interaction Agent
+
 Engages with viewers in real-time, answering questions about debate topics, explaining cryptocurrency concepts, and facilitating audience participation.
 
 ### Data Integration Agent
+
 Retrieves, processes, and supplies relevant cryptocurrency data from Recall Network to other agents in the system. Provides unbiased, accurate market data.
 
 ### Ronso Orchestrator
-Coordinates all agents to ensure a seamless user experience. Directs traffic between agents, triggers debate sequences, and manages transitions between phases. 
+
+Coordinates all agents to ensure a seamless user experience. Directs traffic between agents, triggers debate sequences, and manages transitions between phases.
