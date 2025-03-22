@@ -1,0 +1,58 @@
+{
+  "metadata": {
+    "timestamp": "2025-03-22T05:06:56.916Z",
+    "sourceCount": 6,
+    "successCount": 3,
+    "usingSampleData": true
+  },
+  "data": [
+    {
+      "url": "https://coinmarketcap.com/trending-cryptocurrencies/",
+      "timestamp": "2025-03-22T05:06:55.019Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "url": "https://www.coindesk.com/",
+      "timestamp": "2025-03-22T05:06:55.560Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "url": "https://cointelegraph.com/",
+      "timestamp": "2025-03-22T05:06:55.861Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "url": "https://decrypt.co/",
+      "timestamp": "2025-03-22T05:06:56.157Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "url": "https://www.theblock.co/",
+      "timestamp": "2025-03-22T05:06:56.465Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "url": "https://messari.io/news",
+      "timestamp": "2025-03-22T05:06:56.916Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "url": "https://coinmarketcap.com/trending-cryptocurrencies/",
+      "title": "[SAMPLE DATA] Trending Cryptocurrencies | CoinMarketCap",
+      "content": "Bitcoin (BTC) is showing strong market movement with a 2.3% increase over the last 24 hours. Ethereum (ETH) follows with gains of 1.8%, while Solana (SOL) is up 5.2%. Analysts attribute the rise to increasing institutional adoption and reduced regulatory concerns.",
+      "timestamp": "2025-03-22T05:06:54.328Z"
+    },
+    {
+      "url": "https://www.coindesk.com/",
+      "title": "[SAMPLE DATA] CoinDesk: Bitcoin, Ethereum, Crypto News and Price Data",
+      "content": "The SEC is reportedly reconsidering its stance on spot Bitcoin ETFs following recent court rulings. Meanwhile, Ethereum's upcoming upgrade promises to reduce gas fees by as much as 90% according to developer reports.",
+      "timestamp": "2025-03-22T05:06:54.333Z"
+    },
+    {
+      "url": "https://cointelegraph.com/",
+      "title": "[SAMPLE DATA] Cointelegraph: Bitcoin, Ethereum, Crypto News & Price Indexes",
+      "content": "DeFi protocols have seen a resurgence with over $12B in total value locked this month. Uniswap v4 deployment is set for Q3, bringing significant efficiency improvements to the AMM model.",
+      "timestamp": "2025-03-22T05:06:54.333Z"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "metadata": {
+    "timestamp": "2025-03-22T05:45:51.621Z",
+    "queryCount": 6,
+    "successCount": 3,
+    "usingSampleData": true
+  },
+  "data": [
+    {
+      "query": "What are the latest cryptocurrency market trends?",
+      "timestamp": "2025-03-22T05:45:49.936Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "query": "Recent developments in Bitcoin and Ethereum",
+      "timestamp": "2025-03-22T05:45:50.280Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "query": "Emerging altcoins and their potential",
+      "timestamp": "2025-03-22T05:45:50.622Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "query": "Latest crypto regulations and policy changes",
+      "timestamp": "2025-03-22T05:45:50.974Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "query": "DeFi innovations and market updates",
+      "timestamp": "2025-03-22T05:45:51.330Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "query": "NFT market trends and notable projects",
+      "timestamp": "2025-03-22T05:45:51.621Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "query": "What are the latest cryptocurrency market trends?",
+      "finalAnalysis": "[SAMPLE DATA] Bitcoin (BTC) is showing strong market movement with a 2.3% increase over the last 24 hours. Ethereum (ETH) follows with gains of 1.8%, while Solana (SOL) is up 5.2%. Analysts attribute the rise to increasing institutional adoption and reduced regulatory concerns.",
+      "sources": [
+        {
+          "url": "https://coinmarketcap.com/trending-cryptocurrencies/",
+          "title": "Trending Cryptocurrencies | CoinMarketCap",
+          "description": "Overview of trending cryptocurrencies and market movements"
+        }
+      ],
+      "timestamp": "2025-03-22T05:45:49.378Z"
+    },
+    {
+      "query": "Recent developments in Bitcoin and Ethereum",
+      "finalAnalysis": "[SAMPLE DATA] The SEC is reportedly reconsidering its stance on spot Bitcoin ETFs following recent court rulings. Meanwhile, Ethereum's upcoming upgrade promises to reduce gas fees by as much as 90% according to developer reports.",
+      "sources": [
+        {
+          "url": "https://www.coindesk.com/",
+          "title": "CoinDesk: Bitcoin, Ethereum, Crypto News and Price Data",
+          "description": "Latest news on Bitcoin ETFs and Ethereum upgrades"
+        }
+      ],
+      "timestamp": "2025-03-22T05:45:49.381Z"
+    },
+    {
+      "query": "DeFi innovations and market updates",
+      "finalAnalysis": "[SAMPLE DATA] DeFi protocols have seen a resurgence with over $12B in total value locked this month. Uniswap v4 deployment is set for Q3, bringing significant efficiency improvements to the AMM model.",
+      "sources": [
+        {
+          "url": "https://cointelegraph.com/",
+          "title": "Cointelegraph: Bitcoin, Ethereum, Crypto News & Price Indexes",
+          "description": "Analysis of DeFi market trends and protocol updates"
+        }
+      ],
+      "timestamp": "2025-03-22T05:45:49.381Z"
+    }
+  ]
+}

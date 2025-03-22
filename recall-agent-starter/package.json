@@ -9,6 +9,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "tsup src/index.ts --format esm --dts",
+    "build:scripts": "tsc scripts/*.ts --esModuleInterop --skipLibCheck --module ESNext --outDir scripts/dist",
     "start": "tsc && node --loader ts-node/esm src/index.ts",
     "clean": "./scripts/clean.sh",
     "start:service:all": "pm2 start pnpm --name=\"all\" --restart-delay=3000 --max-restarts=10 -- run start:all",
@@ -36,6 +37,7 @@
     "@elizaos/plugin-starknet": "0.1.9",
     "@elizaos/plugin-tee-log": "^0.1.9",
     "@fal-ai/client": "1.2.0",
+    "@mendable/firecrawl-js": "^1.20.1",
     "@recallnet/chains": "^0.0.5",
     "@recallnet/sdk": "^0.0.6",
     "@tavily/core": "0.0.2",
@@ -46,11 +48,14 @@
     "ai": "3.4.33",
     "amqplib": "0.10.5",
     "anthropic-vertex-ai": "1.0.2",
+    "axios": "^1.8.4",
     "better-sqlite3": "11.5.0",
     "body-parser": "1.20.3",
     "cors": "2.8.5",
     "discord.js": "14.16.3",
+    "dotenv": "^16.4.7",
     "express": "4.21.1",
+    "firecrawl": "^1.20.1",
     "fs": "0.0.1-security",
     "multer": "1.4.5-lts.1",
     "net": "1.0.2",
@@ -78,6 +83,7 @@
   "devDependencies": {
     "@eslint/js": "^9.19.0",
     "@types/multer": "^1.4.12",
+    "@types/node": "^22.13.11",
     "@typescript-eslint/eslint-plugin": "^8.23.0",
     "@typescript-eslint/parser": "^8.23.0",
     "@typescript-eslint/utils": "^8.23.0",
@@ -87,6 +93,7 @@
     "prettier": "^3.4.2",
     "ts-node": "10.9.2",
     "tsup": "8.3.5",
+    "tsx": "^4.19.3",
     "typescript": "5.5.3"
   }
 }

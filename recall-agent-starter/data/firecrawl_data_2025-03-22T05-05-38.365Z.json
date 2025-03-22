@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "timestamp": "2025-03-22T05:05:38.365Z",
+    "sourceCount": 6,
+    "successCount": 0
+  },
+  "data": [
+    {
+      "url": "https://coinmarketcap.com/trending-cryptocurrencies/",
+      "timestamp": "2025-03-22T05:05:36.850Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "url": "https://www.coindesk.com/",
+      "timestamp": "2025-03-22T05:05:37.143Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "url": "https://cointelegraph.com/",
+      "timestamp": "2025-03-22T05:05:37.438Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "url": "https://decrypt.co/",
+      "timestamp": "2025-03-22T05:05:37.733Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "url": "https://www.theblock.co/",
+      "timestamp": "2025-03-22T05:05:38.075Z",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "url": "https://messari.io/news",
+      "timestamp": "2025-03-22T05:05:38.365Z",
+      "error": "Request failed with status code 404"
+    }
+  ]
+}

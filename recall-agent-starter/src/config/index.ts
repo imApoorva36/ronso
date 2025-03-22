@@ -27,7 +27,7 @@ export function parseArguments(): {
 export async function loadCharacters(charactersArg: string): Promise<Character[]> {
   let characterPaths = charactersArg?.split(',').map((filePath) => {
     if (path.basename(filePath) === filePath) {
-      filePath = '../characters/' + filePath;
+      filePath = '../characters/ronso/' + filePath;
     }
     return path.resolve(process.cwd(), filePath.trim());
   });
@@ -49,7 +49,7 @@ export async function loadCharacters(charactersArg: string): Promise<Character[]
       }
     }
   }
-
+  console.log('loadedCharacters', loadedCharacters);
   return loadedCharacters;
 }
 
