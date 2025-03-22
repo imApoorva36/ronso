@@ -1,182 +1,267 @@
-# Recall AI Agent Starter Kit
+# Ronso Standalone API Server
 
-An Eliza starter kit that packages Recall functionality into an Eliza plugin, allowing agents to:
+A standalone API server for the Ronso crypto debate platform that generates high-quality crypto debates and topic suggestions.
 
-- ✅ Create Recall buckets
-- ✅ Write objects to buckets
-- ✅ Get and download objects from Recall buckets
-- ✅ List buckets, account information, and credit availability
-- ✅ Purchase credits
-- ✅ Sync chain-of-thought log files to Recall buckets
-- ✅ Use chain-of-thought historical logs in agent context to improve inference
+## Overview
 
-## 📌 Overview
+This server provides a simple, self-contained API for generating cryptocurrency debate content. It includes:
 
-This plugin integrates **Recall storage** with Eliza AI agents, providing persistent memory capabilities. It enables:
+1. Expert topic generation using curated research data
+2. Sophisticated debate script generation between two speakers
+3. Character-based AI system that can be extended with new roles
 
-1. **Chain-of-Thought Logging:** The agent logs reasoning steps into a local database.
-2. **Periodic Syncing to Recall:** Logs are periodically uploaded to Recall buckets.
-3. **Retrieving Thought Logs for Context:** Before each inference cycle, thought logs are retrieved and injected into the agent's state.
-4. **Efficient Storage Management:** The agent can create, list, add, and retrieve objects within Recall buckets.
+## Quick Start
 
-This starter kit also uses a modified `DirectClient` specifically built to extract chain-of-thought logs.
+### Prerequisites
 
-### **🔄 Flow of Operations**
+- Node.js 18+
+- An OpenAI API key with access to GPT models
 
-- 1️⃣ User requests an action (e.g., "Create a bucket named 'logs'"), or simply sends a query to the agent.
-- 2️⃣ The **RecallService** processes the request and interacts with the Recall API if an action has been invoked.
-- 3️⃣ Chain-of-thought logs are stored and periodically synced using the modified database structure.
-- 4️⃣ The **Recall Provider** fetches chain-of-thought logs before each agent loop.
+### Setup
 
-## 📌 Actions
+1. Clone this repository
+2. Install dependencies:
 
-Actions define how the agent interacts with Recall. Each action is triggered based on user intent.
+```bash
+npm install
+# or
+pnpm install
+```
 
-| **Action**        | **Trigger Format**                                                                                 | **Description**                                                                                                                                    |
-| ----------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Create Bucket** | `"Create a bucket for me named \"bucket-alias\""` `OR` `"Create a bucket called \"bucket-alias\""` | Creates a new Recall bucket (or retrieves an existing one).                                                                                        |
-| **List Buckets**  | `"Get a list of my buckets"` `OR` `"Show my Recall buckets"`                                       | Retrieves a list of all available Recall buckets.                                                                                                  |
-| **Add Object**    | `"Add object \"file.txt\" to bucket \"bucket-alias\""`                                             | Uploads an object (file, text, data) to a specified bucket. **Object must come first in quotes, followed by bucket name.**                         |
-| **Get Object**    | `"Get object \"file.txt\" from bucket \"bucket-alias\""`                                           | Downloads an object from a specified bucket and stores in the /downloads directory. **Object must come first in quotes, followed by bucket name.** |
-| **Get Account**   | `"Get my account details"` `OR` `"Retrieve my Recall account"`                                     | Fetches the agent's Recall account information.                                                                                                    |
-| **Get Balance**   | `"Check my Recall credit balance"` `OR` `"How many credits do I have?"`                            | Retrieves the agent’s available Recall credits.                                                                                                    |
-| **Buy Credit**    | `"Buy 3 credits"` `OR` `"Purchase 0.5 Recall credits"`                                             | Purchases additional credits for storage & usage. **Requires a numerical amount.**                                                                 |
+3. Create a `.env` file based on `.env.example` and add your OpenAI API key:
 
-### **🔍 Example Triggers**
+```
+OPENAI_API_KEY=your_openai_api_key
+SERVER_PORT=3000
+MEDIUM_OPENAI_MODEL=gpt-4o
+```
 
-> ✅ **"Get object \"data.json\" from bucket \"backup\""**  
-> ✅ **"Add object \"newFile.txt\" to bucket \"storage-bucket\""**  
-> ✅ **"Create a bucket for me named \"project-logs\""**  
-> ✅ **"Buy 2 Recall credits"**  
-> ✅ **"How many credits do I have?"**
+4. Run the server:
 
-### **🔄 Key Implementation Notes**
+```bash
+npm start
+# or
+pnpm start
+```
 
-- **Order Matters for Add/Get Object**
+The server will start on port 3000 by default (can be changed in .env file) and will automatically try alternative ports if the primary port is in use.
 
-  - The **object key must always be first**, followed by `"from bucket"` and then the **bucket alias**.
-  - Example: `"Get object \"data.json\" from bucket \"backup\""` ✅
-  - Incorrect: `"Get bucket \"backup\" and retrieve object \"data.json\""` ❌
+## API Endpoints
 
-- **Bucket Creation Auto-Validates**
+### Health Check
 
-  - If a **bucket with the alias already exists**, the system will **return its existing address** instead of creating a new one.
+```
+GET /health
+```
 
-- **Buy Credit Requires Numbers**
-  - `"Buy Recall credits"` → **Invalid** ❌
-  - `"Buy 0.2 Recall credits"` → **Valid** ✅
+Response:
 
----
+```json
+{
+  "status": "ok"
+}
+```
 
-## 📌 Providers
+### Get Available Characters
 
-Providers inject **external data** into the agent’s **context** before inference. The **Recall Provider** retrieves thought logs before the agent processes user input.
+```
+GET /characters
+```
 
-```typescript
-export const recallCotProvider: Provider = {
-  get: async (
-    _runtime: IAgentRuntime,
-    message: Memory,
-    _state?: State,
-  ): Promise<Error | string> => {
-    if (!process.env.RECALL_BUCKET_ALIAS) {
-      elizaLogger.error('RECALL_BUCKET_ALIAS is not set');
+Response:
+
+```json
+{
+  "characters": [
+    {
+      "id": "topic_proposal_agent",
+      "name": "TopicProposalAgent"
+    },
+    {
+      "id": "script_generator",
+      "name": "ScriptGenerator"
     }
-    try {
-      const recallService = _runtime.services.get('recall' as ServiceType) as RecallService;
-      const res = await recallService.retrieveOrderedChainOfThoughtLogs(
-        process.env.RECALL_BUCKET_ALIAS,
-      );
-      return JSON.stringify(res, null, 2);
-    } catch (error) {
-      return error instanceof Error ? error.message : 'Unable to get storage provider';
-    }
+  ]
+}
+```
+
+### Generate or Update Debate Script
+
+```
+POST /generate-script
+Content-Type: application/json
+```
+
+#### For generating a new script:
+
+```json
+{
+  "topic": "Are Central Bank Digital Currencies a threat to cryptocurrency decentralization?"
+}
+```
+
+#### For updating an existing script with poll results:
+
+```json
+{
+  "topic": "Are Central Bank Digital Currencies a threat to cryptocurrency decentralization?",
+  "originalScript": {
+    "topic": "Are Central Bank Digital Currencies a threat to cryptocurrency decentralization?",
+    "script": [
+      { "speaker": "speaker1", "text": "...existing pro argument..." },
+      { "speaker": "speaker2", "text": "...existing con argument..." }
+    ]
   },
-};
+  "pollResults": {
+    "proArgumentsScore": 75,
+    "conArgumentsScore": 25,
+    "audienceComments": ["More technical details needed", "Good points on privacy"]
+  }
+}
 ```
 
-### **📌 How it Works**
+Response:
 
-- **Before every agent inference cycle**, the provider **retrieves past chain-of-thought logs**.
-- The logs are **appended to the agent’s context**, improving **long-term memory recall**.
-- The **Recall bucket alias** is configurable via `.env`.
-
----
-
-## 📌 Services
-
-The **RecallService** manages interaction with the **Recall API**, handling:
-
-- **Bucket Management** (`listBuckets()`, `getOrCreateBucket()`)
-- **Object Storage & Retrieval** (`addObject()`, `getObject()`)
-- **Credit Management** (`getCreditInfo()`, `buyCredit()`)
-- **Chain-of-Thought Syncing** (`syncLogsToRecall()`)
-
-```typescript
-const recallService = new RecallService();
-await recallService.getOrCreateBucket('my-bucket');
-await recallService.addObject('my-bucket', 'log.txt', 'Sample log data');
-const retrieved = await recallService.getObject('my-bucket', 'log.txt');
+```json
+{
+  "topic": "Are Central Bank Digital Currencies a threat to cryptocurrency decentralization?",
+  "script": [
+    {"speaker": "speaker1", "text": "...expert pro argument..."},
+    {"speaker": "speaker2", "text": "...sophisticated con argument..."},
+    ...
+  ]
+}
 ```
 
-## 📌 Instructions
+### Get Topic Suggestions
 
-**Note:** The Recall private key you use for this application must have a corresponding registered account with a positive parent balance.
+```
+GET /topics
+```
 
-To register:
+Response:
+
+```json
+{
+  "suggestions": [
+    "Will Bitcoin's fixed supply model prove superior to central bank digital currencies?",
+    "Should DeFi protocols implement KYC measures to gain mainstream adoption?",
+    "Are layer-2 scaling solutions a temporary fix or the long-term future?",
+    "Should DAOs have legal recognition equivalent to traditional corporations?",
+    "Is Ethereum's transition to proof-of-stake a compromise of core principles?"
+  ],
+  "source": "openai_numbered_list",
+  "baseTopic": "Latest crypto regulations and policy changes"
+}
+```
+
+### Chat with Character
+
+```
+POST /chat
+Content-Type: application/json
+
+{
+  "character": "topic_proposal_agent",
+  "message": "What are some controversial topics in DeFi?"
+}
+```
+
+Response:
+
+```json
+{
+  "response": "Several controversial topics in DeFi include: 1) Regulatory compliance vs. decentralization, 2) Oracle manipulation risks, 3) Governance token concentration, 4) MEV extraction ethics, and 5) Insurance mechanisms for protocol exploits.",
+  "character": "topic_proposal_agent"
+}
+```
+
+## Docker Support
+
+The server includes Docker support for containerized deployment:
+
+### Building and Running Locally
+
+Navigate to the `recall-agent-starter` directory first:
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"address": "<your-evm-public-address>"}' https://faucet.node-0.testnet.recall.network/register
+cd recall-agent-starter
 ```
 
-To receive testnet tokens, use the same public address when requesting tokens from the [Recall Faucet](https://faucet.recall.network/).
-
-### **1️⃣ Setup Your Environment**
+Build the Docker image:
 
 ```bash
-cp .env.example .env
+docker build -t ronso .
 ```
 
-Fill in your Recall credentials and configuration.
-
-```dotenv
-RECALL_PRIVATE_KEY="your-private-key"
-RECALL_BUCKET_ALIAS="your-default-bucket"
-RECALL_COT_LOG_PREFIX="cot/"
-
-# Provider configuration, defined in the `characters/eliza.character.json` file
-OPENAI_API_KEY="your-api-key"
-```
-
-Optionally, you can override the CoT sync period, batch size, and network:
-
-```dotenv
-RECALL_SYNC_INTERVAL="120000" # In milliseconds, defaults to 2 minutes
-RECALL_BATCH_SIZE="4" # In kilobytes, defaults to 4KB
-RECALL_NETWORK="testnet" # Defaults to the Recall testnet
-```
-
-To ensure smooth operations and reduce the possibility of dependency errors, please ensure you're using the following node and pnpm versions:
-
-```
-pnpm -v 9.15.4
-node -v v22.11.0
-```
-
-### **2️⃣ Install Dependencies and Start the Server**
-
-Back in the root of this directory, install and start the server:
+Run the container:
 
 ```bash
-pnpm i && pnpm start --characters="characters/eliza.character.json"
+docker run -p 3000:3000 -e OPENAI_API_KEY=your_key_here --name ronso-container ronso
 ```
 
-### **3️⃣ Modify Default Character**
+### Testing the Docker Container
 
-Modify the default character in the [character file](characters/eliza.character.json).
+You can test the API endpoints from outside the container:
 
----
+```bash
+# Test the health endpoint
+curl http://localhost:3000/health
 
-## 🚀 **Start Using Recall with Eliza AI!**
+# Test the characters endpoint
+curl http://localhost:3000/characters
 
-This plugin ensures your **agent retains memory**, improving decision-making over time. Happy coding! 🎉
+# Test the topics endpoint
+curl http://localhost:3000/topics
+```
+
+Or you can exec into the container and test from inside:
+
+```bash
+# Access the container's shell
+docker exec -it ronso-container /bin/sh
+
+# Inside the container, test endpoints with wget
+wget -qO- http://localhost:3000/health
+wget -qO- http://localhost:3000/characters
+wget --header="Content-Type: application/json" --post-data='{"topic": "DeFi regulation"}' http://localhost:3000/generate-script -O -
+```
+
+### Pushing to Docker Hub
+
+```bash
+# Tag your image with your Docker Hub username
+docker tag ronso imapoorva/ronso:latest
+
+# Login to Docker Hub
+docker login
+
+# Push the image to Docker Hub
+docker push imapoorva/ronso:latest
+```
+
+## Features
+
+- **Research-Driven Topics**: Uses curated research data to generate relevant debate topics
+- **Expert-Level Content**: Generates sophisticated debate scripts with technical depth
+- **Script Update Capability**: Can improve scripts based on audience feedback and poll results
+- **Robust Error Handling**: Automatically attempts alternative ports if the primary port is in use
+- **Flexible Response Parsing**: Extracts structured information even when API responses vary in format
+
+## Architecture
+
+The server is built with:
+
+- Express.js for the API framework
+- OpenAI SDK for LLM interaction
+- Character-based system that can be extended with new JSON character files
+
+## Adding New Characters
+
+Place new character definition files in the `characters/ronso/` directory using the `.character.json` format. The system will automatically load them at startup.
+
+## Environment Variables
+
+- `OPENAI_API_KEY`: Your OpenAI API key
+- `SERVER_PORT`: Port to run the server on (default: 3000)
+- `MEDIUM_OPENAI_MODEL`: OpenAI model to use (default: gpt-4o)

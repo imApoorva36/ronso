@@ -8,6 +8,7 @@ import { createBucketAction } from './actions/create-bucket.ts';
 import { addObjectAction } from './actions/add-object.ts';
 import { getObjectAction } from './actions/get-object.ts';
 import { cotProvider } from './providers/cot.ts';
+import { firecrawlResearchProvider } from './providers/firecrawl.ts';
 // import { recallCotProvider } from './providers/index.ts';
 
 export const recallStoragePlugin: Plugin = {
@@ -22,7 +23,10 @@ export const recallStoragePlugin: Plugin = {
     getObjectAction,
     createBucketAction,
   ],
-  providers: [cotProvider],
+  providers: [
+    cotProvider, 
+    firecrawlResearchProvider
+  ],
   services: [RecallService.getInstance()],
 };
 

@@ -1,7 +1,7 @@
 {
   "name": "recall-agent-starter",
   "version": "0.1.8-alpha.1",
-  "main": "src/index.ts",
+  "main": "src/index.js",
   "type": "module",
   "scripts": {
     "lint": "eslint .",
@@ -9,8 +9,11 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "tsup src/index.ts --format esm --dts",
-    "start": "tsc && node --loader ts-node/esm src/index.ts",
     "clean": "./scripts/clean.sh",
+    "start": "node src/index.js",
+    "start:original": "tsc && node --loader ts-node/esm src/index.ts",
+    "dev": "tsc && NODE_ENV=development node --loader ts-node/esm src/index.ts --characters=characters/ronso/topic-proposal-agent.character.json,characters/ronso/script-generator-agent.character.json",
+    "debug": "tsc && NODE_OPTIONS=\"--trace-warnings --inspect\" node --loader ts-node/esm src/index.ts --characters=characters/ronso/topic-proposal-agent.character.json,characters/ronso/script-generator-agent.character.json",
     "start:service:all": "pm2 start pnpm --name=\"all\" --restart-delay=3000 --max-restarts=10 -- run start:all",
     "stop:service:all": "pm2 stop all"
   },
@@ -50,6 +53,7 @@
     "body-parser": "1.20.3",
     "cors": "2.8.5",
     "discord.js": "14.16.3",
+    "dotenv": "^16.4.7",
     "express": "4.21.1",
     "fs": "0.0.1-security",
     "multer": "1.4.5-lts.1",
@@ -68,7 +72,7 @@
     "zod": "^3.24.1"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=18"
   },
   "pnpm": {
     "overrides": {
