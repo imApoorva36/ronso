@@ -39,7 +39,7 @@ Actions define how the agent interacts with Recall. Each action is triggered bas
 | **Add Object**    | `"Add object \"file.txt\" to bucket \"bucket-alias\""`                                             | Uploads an object (file, text, data) to a specified bucket. **Object must come first in quotes, followed by bucket name.**                         |
 | **Get Object**    | `"Get object \"file.txt\" from bucket \"bucket-alias\""`                                           | Downloads an object from a specified bucket and stores in the /downloads directory. **Object must come first in quotes, followed by bucket name.** |
 | **Get Account**   | `"Get my account details"` `OR` `"Retrieve my Recall account"`                                     | Fetches the agent's Recall account information.                                                                                                    |
-| **Get Balance**   | `"Check my Recall credit balance"` `OR` `"How many credits do I have?"`                            | Retrieves the agent’s available Recall credits.                                                                                                    |
+| **Get Balance**   | `"Check my Recall credit balance"` `OR` `"How many credits do I have?"`                            | Retrieves the agent's available Recall credits.                                                                                                    |
 | **Buy Credit**    | `"Buy 3 credits"` `OR` `"Purchase 0.5 Recall credits"`                                             | Purchases additional credits for storage & usage. **Requires a numerical amount.**                                                                 |
 
 ### **🔍 Example Triggers**
@@ -70,7 +70,7 @@ Actions define how the agent interacts with Recall. Each action is triggered bas
 
 ## 📌 Providers
 
-Providers inject **external data** into the agent’s **context** before inference. The **Recall Provider** retrieves thought logs before the agent processes user input.
+Providers inject **external data** into the agent's **context** before inference. The **Recall Provider** retrieves thought logs before the agent processes user input.
 
 ```typescript
 export const recallCotProvider: Provider = {
@@ -98,7 +98,7 @@ export const recallCotProvider: Provider = {
 ### **📌 How it Works**
 
 - **Before every agent inference cycle**, the provider **retrieves past chain-of-thought logs**.
-- The logs are **appended to the agent’s context**, improving **long-term memory recall**.
+- The logs are **appended to the agent's context**, improving **long-term memory recall**.
 - The **Recall bucket alias** is configurable via `.env`.
 
 ---
@@ -180,3 +180,23 @@ Modify the default character in the [character file](characters/eliza.character.
 ## 🚀 **Start Using Recall with Eliza AI!**
 
 This plugin ensures your **agent retains memory**, improving decision-making over time. Happy coding! 🎉
+
+## Crypto Market Data Debate System
+
+This project implements a debate system focused on cryptocurrency market analysis:
+
+1. Collect data from crypto news sources using FireCrawl
+2. Store and index that data in the Recall Network
+3. Prepare a debate context based on the collected data
+4. Run a debate with LLM agents discussing crypto market trends
+
+#### Setup and Running
+
+1. Create a `.env` file with required environment variables (see `.env.example`)
+2. Install dependencies with `pnpm install`
+3. Run the system:
+   - Full workflow: `./scripts/crawl-crypto.sh` and then `./scripts/prepare-debate.sh`
+   - Standalone scraping: `./scripts/simple-firecrawl.sh` (doesn't require Recall Network)
+   - Run the debate: `pnpm start --characters="characters/ronso/ronso-orchestrator.character.json"`
+
+If you encounter issues, refer to [TROUBLESHOOTING.md](TROUBLESHOOTING.md).

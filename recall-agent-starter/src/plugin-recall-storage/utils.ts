@@ -1,12 +1,12 @@
 import { elizaLogger } from '@elizaos/core';
-import { v4, UUID } from 'uuid';
+import { v4 } from 'uuid';
 
 export async function logMemoryPostgres(
   db: any,
   params: {
-    userId: UUID;
-    agentId: UUID;
-    roomId: UUID;
+    userId: string;
+    agentId: string;
+    roomId: string;
     type: string;
     body: string;
   },
@@ -29,9 +29,9 @@ export async function logMemoryPostgres(
 export async function logMemorySqlite(
   db: any,
   params: {
-    userId: UUID;
-    agentId: UUID;
-    roomId: UUID;
+    userId: string;
+    agentId: string;
+    roomId: string;
     type: string;
     body: string;
   },
@@ -45,11 +45,11 @@ export async function logMemorySqlite(
 
 export async function getUnsyncedLogsPostgres(db: any): Promise<
   {
-    id: UUID;
+    id: string;
     body: string;
-    userId: UUID;
-    agentId: UUID | null;
-    roomId: UUID;
+    userId: string;
+    agentId: string | null;
+    roomId: string;
     type: string;
     createdAt: Date;
   }[]
@@ -67,7 +67,7 @@ export async function getUnsyncedLogsPostgres(db: any): Promise<
   }));
 }
 
-export async function markLogsAsSyncedPostgres(db: any, logIds: UUID[]): Promise<void> {
+export async function markLogsAsSyncedPostgres(db: any, logIds: string[]): Promise<void> {
   if (logIds.length === 0) {
     elizaLogger.warn('⚠ No log IDs provided for marking as synced.');
     return;
@@ -87,12 +87,12 @@ export async function markLogsAsSyncedPostgres(db: any, logIds: UUID[]): Promise
   }
 }
 
-export async function getUnsyncedLogsSqlite(db: any): Promise<{ id: UUID; body: string }[]> {
+export async function getUnsyncedLogsSqlite(db: any): Promise<{ id: string; body: string }[]> {
   const sql = 'SELECT id, type, body FROM logs WHERE isSynced = 0 ORDER BY createdAt ASC';
-  return db.prepare(sql).all() as { id: UUID; body: string }[];
+  return db.prepare(sql).all() as { id: string; body: string }[];
 }
 
-export async function markLogsAsSyncedSqlite(db: any, logIds: UUID[]): Promise<void> {
+export async function markLogsAsSyncedSqlite(db: any, logIds: string[]): Promise<void> {
   if (logIds.length === 0) return;
   const placeholders = logIds.map(() => '?').join(', ');
   const sql = `UPDATE logs SET isSynced = 1 WHERE id IN (${placeholders})`;
