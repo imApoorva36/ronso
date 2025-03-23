@@ -20,7 +20,7 @@ export default function AuthStatus() {
         </div>
         <button
           onClick={() => logout()}
-          className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-800 hover:bg-gray-700 transition-colors rounded-full"
+          className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-700 bg-transparent hover:bg-gray-800 hover:border-blue-500/50 transition-all duration-200 rounded-full font-medium"
         >
           <LogOut size={14} /> Logout
         </button>
@@ -31,7 +31,7 @@ export default function AuthStatus() {
   return (
     <button
       onClick={() => login()}
-      className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 transition-colors rounded-full"
+      className="flex items-center gap-2 px-4 py-2 text-sm bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 transition-all duration-200 rounded-full font-medium shadow-md hover:shadow-lg hover:shadow-blue-500/20"
     >
       <LogIn size={14} /> Login
     </button>
