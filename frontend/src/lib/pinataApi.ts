@@ -6,7 +6,7 @@ import { PinataSDK } from 'pinata';
 // Initialize Pinata client with JWT from environment variables
 const PINATA_JWT = import.meta.env.VITE_PINATA_JWT || import.meta.env.VITE_PINATA_JWT;
 // You can replace this with your specific gateway if you have one
-const PINATA_GATEWAY = 'gateway.pinata.cloud';
+const PINATA_GATEWAY = 'jade-bitter-duck-676.mypinata.cloud';
 
 console.log('Pinata API initialized:', PINATA_JWT ? 'JWT present' : 'JWT missing');
 
@@ -57,35 +57,35 @@ export const fetchExistingAudioFiles = async (): Promise<boolean> => {
       console.error('Pinata JWT is missing');
       return false;
     }
-    
+
     console.log('Fetching existing audio files from Pinata...');
-    
+
     // Clear existing cache before populating
     clearAudioCIDCache();
-    
+
     try {
       // Get list of files from Pinata
       const files = await pinata.files.list({ limit: 100 }); // Increase limit to get more files
       console.log(`Found ${files.items.length} files on Pinata`);
-      
+
       // Filter for MP3 files and extract metadata
-      const audioFiles = files.items.filter(file => 
-        file.name.endsWith('.mp3') && 
-        (file.name.toLowerCase().startsWith('alex_segment_') || 
-         file.name.toLowerCase().startsWith('morgan_segment_'))
+      const audioFiles = files.items.filter(file =>
+        file.name.endsWith('.mp3') &&
+        (file.name.toLowerCase().startsWith('alex_segment_') ||
+          file.name.toLowerCase().startsWith('morgan_segment_'))
       );
-      
+
       console.log(`Found ${audioFiles.length} audio files on Pinata`);
-      
+
       // Populate the cache with the most recent files first (based on creation date)
       // This ensures we have the latest version of each segment
       const sortedAudioFiles = audioFiles.sort((a, b) => {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
-      
+
       // Track which segments we've already processed to avoid duplicates
       const processedSegments = new Set<string>();
-      
+
       // Cache the CIDs
       sortedAudioFiles.forEach(file => {
         const nameParts = file.name.toLowerCase().split('_segment_');
@@ -94,10 +94,10 @@ export const fetchExistingAudioFiles = async (): Promise<boolean> => {
           // Remove .mp3 and any potential extra characters after it
           const segmentIndexStr = nameParts[1].replace(/\.mp3.*/i, '');
           const segmentIndex = parseInt(segmentIndexStr, 10);
-          
+
           if (!isNaN(segmentIndex) && (speaker === 'Alex' || speaker === 'Morgan')) {
             const cacheKey = `${speaker}_${segmentIndex}`;
-            
+
             // Only add if we haven't processed this segment yet
             if (!processedSegments.has(cacheKey)) {
               audioCIDCache[cacheKey] = file.cid;
@@ -107,7 +107,7 @@ export const fetchExistingAudioFiles = async (): Promise<boolean> => {
           }
         }
       });
-      
+
       // Log all cached CIDs for debugging
       console.log(`Cached ${Object.keys(audioCIDCache).length} audio CIDs:`, audioCIDCache);
       return true;
@@ -151,44 +151,44 @@ export const uploadAudioToIPFS = async (
       console.error('Pinata JWT is missing');
       throw new Error('Pinata JWT is missing');
     }
-    
+
     const { speaker, segmentIndex, conversationId } = metadata;
     const fileName = `${speaker.toLowerCase()}_segment_${segmentIndex}.mp3`;
-    
+
     // Check if we already have this audio file in cache
     const cacheKey = `${speaker}_${segmentIndex}`;
     if (audioCIDCache[cacheKey]) {
       console.log(`Audio file already exists on IPFS, reusing CID: ${audioCIDCache[cacheKey]}`);
       return audioCIDCache[cacheKey];
     }
-    
+
     console.log(`Uploading audio to IPFS: ${fileName}`);
-    
+
     // Create a File object from the Blob
     const audioFile = new File([audioBlob], fileName, { type: 'audio/mp3' });
-    
+
     // Upload to Pinata with metadata
     const keyvalues: Record<string, string> = {
       speaker,
       segmentIndex: segmentIndex.toString(),
     };
-    
+
     if (conversationId) {
       keyvalues.conversationId = conversationId;
     }
-    
+
     const uploadResponse = await pinata.upload.public
       .file(audioFile)
       .name(fileName)
       .keyvalues(keyvalues);
-    
+
     console.log('IPFS upload response:', uploadResponse);
-    
+
     const cid = uploadResponse.cid;
-    
+
     // Store CID in cache
     audioCIDCache[cacheKey] = cid;
-    
+
     return cid;
   } catch (error) {
     console.error('Error uploading to IPFS:', error);
@@ -209,13 +209,28 @@ export const getIPFSAudioUrl = (
 ): string | null => {
   const cacheKey = `${speaker}_${segmentIndex}`;
   const cid = audioCIDCache[cacheKey];
-  
+
   if (!cid) {
     console.log(`No IPFS CID found for ${speaker} segment ${segmentIndex}. Available CIDs:`, Object.keys(audioCIDCache));
     return null;
   }
-  
+
   return `https://${PINATA_GATEWAY}/ipfs/${cid}`;
+};
+
+export const getIPFSAudioCID = (
+  speaker: 'Alex' | 'Morgan',
+  segmentIndex: number
+): string | null => {
+  const cacheKey = `${speaker}_${segmentIndex}`;
+  const cid = audioCIDCache[cacheKey];
+
+  if (!cid) {
+    console.log(`No IPFS CID found for ${speaker} segment ${segmentIndex}. Available CIDs:`, Object.keys(audioCIDCache));
+    return null;
+  }
+
+  return cid;
 };
 
 /**
@@ -228,6 +243,14 @@ export const clearAudioCIDCache = () => {
   });
 };
 
+export const getAudioFromIPFS = async (cid: string) => {
+  const { data, contentType } = await pinata.gateways.public.get(
+    cid
+  )
+
+  return { data, contentType }
+}
+
 // Register known CIDs from the error message for faster access
-registerAudioCID('Alex', 0, 'bafkreiaejjzw3ftvwfkngcs5wv2nwvp7xlfbppbdkrmsukihbrw6dthu');
-registerAudioCID('Morgan', 1, 'bafkreihjc4izcstykptwhpn7dy6rkgprmqmyvpxzvjzn7pu3lf3k5km'); 
+// registerAudioCID('Alex', 0, 'bafkreiaejjzw3ftvwfkngcs5wv2nwvp7xlfbppbdkrmsukihbrw6dthu');
+// registerAudioCID('Morgan', 1, 'bafkreihjc4izcstykptwhpn7dy6rkgprmqmyvpxzvjzn7pu3lf3k5km'); 

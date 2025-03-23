@@ -1,7 +1,7 @@
 // ElevenLabs API Integration
 // Based on docs from https://elevenlabs.io/docs/api-reference/text-to-speech
 
-import { uploadAudioToIPFS, getIPFSAudioUrl, fetchExistingAudioFiles, registerAudioCID } from './pinataApi';
+import { uploadAudioToIPFS, getIPFSAudioCID, registerAudioCID, getAudioFromIPFS, getIPFSAudioUrl } from './pinataApi';
 
 const API_KEY = import.meta.env.VITE_ELEVENLABS_XI_API_KEY || import.meta.env.VITE_ELEVENLABS_XI_API_KEY;
 const API_URL = 'https://api.elevenlabs.io/v1';
@@ -43,7 +43,7 @@ const createdBlobUrls: string[] = [];
 // Clear the audio data store
 export const cleanupAudioData = () => {
   console.log(`Cleaning up ${audioDataStore.length} audio segments and ${createdBlobUrls.length} blob URLs`);
-  
+
   // Revoke all blob URLs to prevent memory leaks
   createdBlobUrls.forEach(url => {
     try {
@@ -52,7 +52,7 @@ export const cleanupAudioData = () => {
       console.error('Error revoking blob URL:', error);
     }
   });
-  
+
   // Clear arrays
   createdBlobUrls.length = 0;
   audioDataStore.length = 0;
@@ -76,16 +76,16 @@ const createAndStoreBlobUrl = (buffer: ArrayBuffer, type = 'audio/mpeg'): string
 export const getAudioBlobUrl = async (speaker: string, index: number): Promise<string | null> => {
   try {
     // First, try to find it in our audio data store
-    const audioData = audioDataStore.find(data => 
+    const audioData = audioDataStore.find(data =>
       data.speaker === speaker && data.segmentIndex === index
     );
-    
+
     // If we have it in the store and already have a blob URL, return that
     if (audioData && audioData.blobUrl) {
       console.log(`Returning existing blob URL for ${speaker} segment ${index}`);
       return audioData.blobUrl;
     }
-    
+
     // If we have the buffer but no blob URL, create it
     if (audioData && audioData.buffer) {
       const blobUrl = createAndStoreBlobUrl(audioData.buffer);
@@ -93,7 +93,7 @@ export const getAudioBlobUrl = async (speaker: string, index: number): Promise<s
       console.log(`Created new blob URL for ${speaker} segment ${index} from buffer`);
       return blobUrl;
     }
-    
+
     // If not in the audio data store, check IPFS
     const ipfsUrl = getIPFSAudioUrl(speaker as 'Alex' | 'Morgan', index);
     if (ipfsUrl) {
@@ -101,20 +101,20 @@ export const getAudioBlobUrl = async (speaker: string, index: number): Promise<s
       try {
         // Fetch the audio from IPFS with a timeout
         const fetchPromise = fetch(ipfsUrl);
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Fetch timeout')), 10000)
         );
-        
+
         // Race the fetch against a timeout
         const response = await Promise.race([fetchPromise, timeoutPromise]) as Response;
         if (!response.ok) {
           throw new Error(`Failed to fetch from IPFS: ${response.status} ${response.statusText}`);
         }
-        
+
         // Store the fetched data in our local cache
         const buffer = await response.arrayBuffer();
         const blobUrl = createAndStoreBlobUrl(buffer);
-        
+
         // Store in our data store
         audioDataStore.push({
           buffer,
@@ -123,7 +123,7 @@ export const getAudioBlobUrl = async (speaker: string, index: number): Promise<s
           ipfsCid: ipfsUrl.split('/').pop(),
           blobUrl
         });
-        
+
         console.log(`Successfully loaded audio for ${speaker} segment ${index} from IPFS`);
         return blobUrl;
       } catch (error) {
@@ -131,7 +131,7 @@ export const getAudioBlobUrl = async (speaker: string, index: number): Promise<s
         // If there's an error, continue to try generation
       }
     }
-    
+
     console.log(`No audio data found for ${speaker} segment ${index}, may need to generate it.`);
     return null;
   } catch (error) {
@@ -145,91 +145,51 @@ interface ErrorWithName extends Error {
   name: string;
 }
 
-// Available CORS proxies - if one fails, we'll try the next one
-const CORS_PROXIES = [
-  'https://corsproxy.io/?',
-  'https://api.allorigins.win/raw?url=',
-  'https://proxy.cors.sh/'
-];
-
 // Check if audio exists on IPFS and load it if available
 export const loadAudioFromIPFS = async (
   speaker: 'Alex' | 'Morgan',
   segmentIndex: number
 ): Promise<boolean> => {
   try {
-    const ipfsUrl = getIPFSAudioUrl(speaker, segmentIndex);
+    const ipfsUrl = getIPFSAudioCID(speaker, segmentIndex);
     if (!ipfsUrl) {
       console.log(`No IPFS URL found for ${speaker} segment ${segmentIndex}`);
       return false;
     }
-    
+
     console.log(`Loading audio from IPFS: ${ipfsUrl}`);
-    
-    // Try each proxy in sequence until one works
-    for (let i = 0; i < CORS_PROXIES.length; i++) {
-      const proxy = CORS_PROXIES[i];
-      const proxiedUrl = `${proxy}${encodeURIComponent(ipfsUrl)}`;
-      console.log(`Trying proxy ${i+1}/${CORS_PROXIES.length}: ${proxy}`);
-      
-      // Fetch with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
-      
-      try {
-        const response = await fetch(proxiedUrl, { 
-          signal: controller.signal,
-          mode: 'cors' // Ensure we're using CORS mode
-        });
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          console.warn(`Proxy ${i+1} failed with status: ${response.status}`);
-          continue; // Try next proxy
-        }
-        
-        // Store the fetched data in our local cache
-        const buffer = await response.arrayBuffer();
-        const blobUrl = createAndStoreBlobUrl(buffer);
-        
-        // Check if this segment is already in audioDataStore
-        const existingIndex = audioDataStore.findIndex(
-          data => data.speaker === speaker && data.segmentIndex === segmentIndex
-        );
-        
-        if (existingIndex >= 0) {
-          // Update existing entry
-          audioDataStore[existingIndex].buffer = buffer;
-          audioDataStore[existingIndex].ipfsCid = ipfsUrl.split('/').pop();
-          audioDataStore[existingIndex].blobUrl = blobUrl;
-        } else {
-          // Add new entry
-          audioDataStore.push({
-            buffer,
-            speaker,
-            segmentIndex,
-            ipfsCid: ipfsUrl.split('/').pop(),
-            blobUrl
-          });
-        }
-        
-        console.log(`Successfully loaded audio for ${speaker} segment ${segmentIndex} from IPFS via proxy ${i+1}`);
-        return true;
-      } catch (error) {
-        clearTimeout(timeoutId);
-        const err = error as ErrorWithName;
-        if (err.name === 'AbortError') {
-          console.warn(`Proxy ${i+1} timed out for ${speaker} segment ${segmentIndex}`);
-        } else {
-          console.warn(`Proxy ${i+1} error for ${speaker} segment ${segmentIndex}:`, error);
-        }
-        // Continue to next proxy
-      }
+
+    const { data, contentType } = await getAudioFromIPFS(ipfsUrl);
+
+    // Store the fetched data in our local cache
+
+    console.log(contentType)
+
+    const buffer = await data?.arrayBuffer();
+    const blobUrl = createAndStoreBlobUrl(buffer);
+
+    // Check if this segment is already in audioDataStore
+    const existingIndex = audioDataStore.findIndex(
+      data => data.speaker === speaker && data.segmentIndex === segmentIndex
+    );
+
+    if (existingIndex >= 0) {
+      // Update existing entry
+      audioDataStore[existingIndex].buffer = buffer;
+      audioDataStore[existingIndex].ipfsCid = ipfsUrl.split('/').pop();
+      audioDataStore[existingIndex].blobUrl = blobUrl;
+    } else {
+      // Add new entry
+      audioDataStore.push({
+        buffer,
+        speaker,
+        segmentIndex,
+        ipfsCid: ipfsUrl.split('/').pop(),
+        blobUrl
+      });
     }
-    
-    // If we're here, all proxies failed
-    console.error(`All proxies failed for ${speaker} segment ${segmentIndex}`);
-    return false;
+
+    return true;
   } catch (error) {
     console.error(`Error in loadAudioFromIPFS for ${speaker} segment ${segmentIndex}:`, error);
     return false;
@@ -242,34 +202,34 @@ export const preloadAllAudioSegments = async (
 ): Promise<boolean> => {
   try {
     console.log(`Preloading ${segments.length} audio segments...`);
-    
+
     // Process segments in batches to avoid rate limiting
     const BATCH_SIZE = 3; // Process 3 at a time to avoid overwhelming servers
     const MAX_RETRIES = 2;
-    
+
     let succeeded = 0;
     let failed = 0;
-    
+
     // Clone the array to avoid modifying the original
     const segmentsToProcess = [...segments];
-    
+
     // Keep track of which segments we've already processed
     const processedSegments = new Set<string>();
-    
+
     // Process in batches with retries
     while (segmentsToProcess.length > 0) {
       // Take the next batch
       const batch = segmentsToProcess.splice(0, BATCH_SIZE);
-      
+
       // Create an array of promises to load the current batch in parallel
       const loadPromises = batch.map(({ speaker, segmentIndex }) => {
         const key = `${speaker}_${segmentIndex}`;
-        
+
         // Skip if already processed
         if (processedSegments.has(key)) {
           return Promise.resolve(true);
         }
-        
+
         return loadAudioFromIPFS(speaker, segmentIndex).then(result => {
           if (result) {
             processedSegments.add(key);
@@ -280,10 +240,10 @@ export const preloadAllAudioSegments = async (
           return result;
         });
       });
-      
+
       // Wait for the current batch to complete
       await Promise.all(loadPromises);
-      
+
       // Small delay between batches to avoid rate limiting
       if (segmentsToProcess.length > 0) {
         // Random delay between 200-500ms to prevent pattern detection by rate limiters
@@ -291,37 +251,37 @@ export const preloadAllAudioSegments = async (
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-    
+
     // Check for any failed segments and retry once with more delay
     if (failed > 0 && MAX_RETRIES > 0) {
       console.log(`Retrying ${failed} failed segments...`);
-      
+
       // Find segments that failed (not in processedSegments)
       const failedSegments = segments.filter(({ speaker, segmentIndex }) => {
         const key = `${speaker}_${segmentIndex}`;
         return !processedSegments.has(key);
       });
-      
+
       // Wait a bit longer before retrying
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Retry each failed segment one by one with delay between attempts
       for (const { speaker, segmentIndex } of failedSegments) {
         const key = `${speaker}_${segmentIndex}`;
         if (processedSegments.has(key)) continue;
-        
+
         const success = await loadAudioFromIPFS(speaker, segmentIndex);
         if (success) {
           processedSegments.add(key);
           succeeded++;
           failed--;
         }
-        
+
         // Add delay between retries
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
-    
+
     console.log(`Preloaded ${succeeded} segments successfully, ${failed} failed`);
     return succeeded > 0;
   } catch (error) {
@@ -336,7 +296,17 @@ export const convertTextToSpeech = async (
   segmentIndex: number
 ): Promise<boolean> => {
   console.log(`Converting text to speech for speaker: ${speaker}, segment: ${segmentIndex}`);
+
+  // Check if we already have this audio in the store
+  const existingInStore = audioDataStore.find(
+    data => data.speaker === speaker && data.segmentIndex === segmentIndex
+  );
   
+  if (existingInStore) {
+    console.log(`Audio already exists in store for ${speaker}, segment ${segmentIndex}`);
+    return true;
+  }
+
   // First check if we already have this audio on IPFS
   const ipfsUrl = getIPFSAudioUrl(speaker, segmentIndex);
   if (ipfsUrl) {
@@ -348,13 +318,13 @@ export const convertTextToSpeech = async (
     console.log('Failed to load from IPFS, falling back to generation');
     // If loading failed, continue with generation
   }
-  
+
   console.log(`Text content (first 50 chars): ${text.substring(0, 50)}...`);
-  
+
   try {
     const voiceId = VOICE_IDS[speaker];
     console.log(`Using voice ID: ${voiceId} for speaker: ${speaker}`);
-    
+
     if (!voiceId) {
       console.error(`Voice ID not found for speaker: ${speaker}`);
       throw new Error(`Voice ID not found for speaker: ${speaker}`);
@@ -391,7 +361,7 @@ export const convertTextToSpeech = async (
     );
 
     console.log('API response status:', response.status, response.statusText);
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       console.error('ElevenLabs API error details:', errorData);
@@ -400,44 +370,54 @@ export const convertTextToSpeech = async (
 
     // Get audio blob from response
     const audioBlob = await response.blob();
-    console.log('Audio blob received:', { 
-      size: `${(audioBlob.size / 1024).toFixed(2)} KB`, 
-      type: audioBlob.type 
+    console.log('Audio blob received:', {
+      size: `${(audioBlob.size / 1024).toFixed(2)} KB`,
+      type: audioBlob.type
     });
-    
+
     // Store the audio buffer in our audio store
     const buffer = await audioBlob.arrayBuffer();
     // Create a blob URL for the audio
     const blobUrl = createAndStoreBlobUrl(buffer);
     console.log(`Created blob URL for ${speaker}, segment ${segmentIndex}: ${blobUrl}`);
-    
+
     // Upload the audio to IPFS via Pinata
     const ipfsCid = await uploadAudioToIPFS(
       new Blob([buffer], { type: 'audio/mp3' }),
-      { 
-        speaker, 
+      {
+        speaker,
         segmentIndex,
         conversationId: new Date().toISOString() // Use timestamp as conversation ID
       }
     );
-    
+
     console.log(`Uploaded audio to IPFS, CID: ${ipfsCid || 'upload failed'}`);
-    
+
     // If we successfully uploaded to IPFS, register the CID
     if (ipfsCid) {
       registerAudioCID(speaker, segmentIndex, ipfsCid);
     }
+
+    // Check again if the data was added to the store during IPFS operations
+    const addedDuringProcess = audioDataStore.find(
+      data => data.speaker === speaker && data.segmentIndex === segmentIndex
+    );
     
-    // Store the audio data locally as well
-    audioDataStore.push({
-      buffer,
-      speaker,
-      segmentIndex,
-      ipfsCid: ipfsCid || undefined, // Convert null to undefined to satisfy TS
-      blobUrl
-    });
-    
-    console.log(`Audio data stored for ${speaker}, segment ${segmentIndex}`);
+    // Only add to store if it wasn't already added
+    if (!addedDuringProcess) {
+      // Store the audio data locally as well
+      audioDataStore.push({
+        buffer,
+        speaker,
+        segmentIndex,
+        ipfsCid: ipfsCid || undefined, // Convert null to undefined to satisfy TS
+        blobUrl
+      });
+      console.log(`Audio data stored for ${speaker}, segment ${segmentIndex}`);
+    } else {
+      console.log(`Audio data was already added to store for ${speaker}, segment ${segmentIndex}`);
+    }
+
     return true;
   } catch (error) {
     console.error('Error converting text to speech:', error);
@@ -445,39 +425,85 @@ export const convertTextToSpeech = async (
   }
 };
 
+// Save audio data to a JSON file or return JSON data
+export const saveAudioDataToJSON = async (options?: { 
+  downloadFile?: boolean; // If true, will trigger a file download
+  returnData?: boolean;   // If true, will return the serialized data
+}): Promise<{ success: boolean; data?: any }> => {
+  try {
+    console.log(`Processing ${audioDataStore.length} audio segments for JSON storage`);
+    
+    // Create a serializable version of the audio data
+    // We can't directly serialize ArrayBuffer, so we'll store metadata and IPFS CIDs
+    const serializableData = audioDataStore.map(data => ({
+      speaker: data.speaker,
+      segmentIndex: data.segmentIndex,
+      ipfsCid: data.ipfsCid || null,
+      hasBuffer: !!data.buffer,
+      bufferSize: data.buffer ? data.buffer.byteLength : 0,
+      hasBlobUrl: !!data.blobUrl,
+      timestamp: new Date().toISOString()
+    }));
+    
+    console.log("data to be downloaded")
+    // Format the data as a JSON string
+    const jsonString = JSON.stringify(serializableData, null, 2);
+
+        console.log(jsonString)
+
+    // If download option is enabled, create a downloadable file
+    if (options?.downloadFile) {
+      // Create a Blob with the JSON data
+      const jsonBlob = new Blob([jsonString], { type: 'application/json' });
+      
+      // Create a download link and trigger download
+      const downloadLink = document.createElement('a');
+      downloadLink.href = URL.createObjectURL(jsonBlob);
+      downloadLink.download = `audio_data_store_${new Date().toISOString().replace(/:/g, '-')}.json`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      // Revoke the URL to prevent memory leaks
+      URL.revokeObjectURL(downloadLink.href);
+      
+      console.log('Audio data successfully saved to JSON file');
+    }
+    
+    // Return the data if requested
+    if (options?.returnData) {
+      return { 
+        success: true, 
+        data: serializableData 
+      };
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error processing audio data for JSON:', error);
+    return { success: false };
+  }
+};
+
 export const generateFullConversation = async (
   segments: Array<{ speaker: 'Alex' | 'Morgan'; text: string }>
 ) => {
-  console.log(`Generating full conversation with ${segments.length} segments`);
-  
   try {
-    // Clear only the local audio data store but keep the IPFS cache
-    cleanupAudioData(); // This will clear audioDataStore but keeps IPFS cache intact
-    
-    // First, fetch existing audio files from Pinata
-    const fetchResult = await fetchExistingAudioFiles();
-    console.log(`Finished fetching existing audio files from Pinata: ${fetchResult ? 'success' : 'failed'}`);
-    
-    // Try to preload all the audio segments first
-    const indexedSegments = segments.map((segment, index) => ({
-      speaker: segment.speaker,
-      segmentIndex: index
-    }));
-    
-    await preloadAllAudioSegments(indexedSegments);
-    
-    const results = [];
-    
+    console.log(`Generating full conversation with ${segments.length} segments`);
+    const results: Array<{ speaker: string; text: string; success: boolean; segmentIndex: number }> = [];
+    console.log(segments)
     for (let i = 0; i < segments.length; i++) {
       const segment = segments[i];
       console.log(`Processing segment ${i} for speaker: ${segment.speaker}`);
-      
+
       // Check if we've already preloaded this segment
-      const existingAudio = audioDataStore.find(data => 
+      const existingAudio = audioDataStore.find(data =>
         data.speaker === segment.speaker && data.segmentIndex === i
       );
-      
+
       let success = existingAudio !== undefined;
+
+      console.log(`Preloaded audio check: ${success}`);
       
       // If not preloaded, generate it
       if (!success) {
@@ -485,15 +511,20 @@ export const generateFullConversation = async (
       } else {
         console.log(`Using preloaded audio for ${segment.speaker} segment ${i}`);
       }
-      
+
       results.push({
         ...segment,
         success,
         segmentIndex: i
       });
     }
-    
+
     console.log(`Successfully processed ${results.length} segments`);
+    
+    // Save the audio data to a JSON file after all processing is complete
+    // By default, just process the data but don't download a file
+    await saveAudioDataToJSON();
+    
     return results;
   } catch (error) {
     console.error('Error generating full conversation:', error);

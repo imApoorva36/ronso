@@ -26,6 +26,7 @@
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
     "lucide-react": "^0.483.0",
+    "pinata": "^2.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.4.0",

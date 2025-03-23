@@ -33,9 +33,11 @@ const CryptoNewsroom = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [audioLoaded, setAudioLoaded] = useState<Record<number, boolean>>({});
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   
   const audioRefs = useRef<Array<HTMLAudioElement | null>>([]);
   const notificationIdCounter = useRef(0);
+  const audioLoadedRef = useRef(false);
 
   // Function to show a notification
   const showNotification = (type: NotificationType, message: string) => {
@@ -56,32 +58,54 @@ const CryptoNewsroom = () => {
     }
   };
 
-  // Load audio data
+  // Load audio data with a more robust approach
   useEffect(() => {
+    const instanceId = 'crypto-newsroom-loading-' + Date.now();
+    
     const loadAudioSegments = async () => {
+      if (localStorage.getItem('audio-loading')) {
+        console.log('Another instance is already loading audio, skipping');
+        return;
+      }
+      
+      localStorage.setItem('audio-loading', instanceId);
+      
+      if (audioLoadedRef.current || isLoadingAudio) {
+        console.log('Audio already loaded or loading, skipping');
+        localStorage.removeItem('audio-loading');
+        return;
+      }
+      
+      setIsLoadingAudio(true);
+      
       try {
         setLoading(true);
-        // First generate the conversation which will also fetch existing audio from Pinata
         const segments = await generateFullConversation(cryptoNewsScript);
         setScriptSegments(segments);
         
-        // Preload audio files for smoother playback
         await preloadAudioSegments(segments);
+        
+        audioLoadedRef.current = true;
       } catch (err) {
         console.error('Failed to load audio segments:', err);
         setError('Failed to load audio. Please try again later.');
-        // Use the script without audio for fallback
         setScriptSegments(cryptoNewsScript);
       } finally {
         setLoading(false);
+        setIsLoadingAudio(false);
+        if (localStorage.getItem('audio-loading') === instanceId) {
+          localStorage.removeItem('audio-loading');
+        }
       }
     };
 
     loadAudioSegments();
 
-    // Clean up audio data on unmount
     return () => {
       cleanupAudioData();
+      if (localStorage.getItem('audio-loading') === instanceId) {
+        localStorage.removeItem('audio-loading');
+      }
     };
   }, []);
 
@@ -99,7 +123,6 @@ const CryptoNewsroom = () => {
     try {
       await preloadAllAudioSegments(indexedSegments);
       
-      // Pre-cache blob URLs for all segments
       for (let i = 0; i < segments.length; i++) {
         if (segments[i].success && segments[i].segmentIndex !== undefined) {
           await getSegmentAudioUrl(segments[i], i);
@@ -117,7 +140,6 @@ const CryptoNewsroom = () => {
     audioRefs.current = audioRefs.current.slice(0, scriptSegments.length);
     
     return () => {
-      // Clean up audio elements on unmount
       audioRefs.current.forEach(audio => {
         if (audio) {
           audio.pause();
@@ -129,18 +151,15 @@ const CryptoNewsroom = () => {
 
   // Function to get or create blob URL for a segment
   const getSegmentAudioUrl = async (segment: EnhancedScriptSegment, index: number): Promise<string | null> => {
-    // Check if we already have this URL cached
     const cacheKey = `${segment.speaker}-${index}`;
     if (audioBlobUrls[cacheKey]) {
       return audioBlobUrls[cacheKey];
     }
 
-    // If not, create a new one if the segment was processed successfully
     if (segment.success && segment.segmentIndex !== undefined) {
       try {
         const url = await getAudioBlobUrl(segment.speaker, segment.segmentIndex);
         if (url) {
-          // Cache the URL
           setAudioBlobUrls(prev => ({
             ...prev,
             [cacheKey]: url
@@ -163,13 +182,11 @@ const CryptoNewsroom = () => {
     const segment = scriptSegments[index];
     if (!segment) return;
     
-    // Get audio URL for this segment
     try {
       const audioUrl = await getSegmentAudioUrl(segment, index);
       if (!audioUrl) {
         console.error(`No audio URL available for segment ${index}`);
         showNotification('error', `Could not play audio for ${segment.speaker}.`);
-        // Move to next segment if autoplay is on
         if (autoplay && index < scriptSegments.length - 1) {
           setTimeout(() => {
             setCurrentlyPlaying(index + 1);
@@ -181,20 +198,17 @@ const CryptoNewsroom = () => {
       
       setCurrentlyPlaying(index);
       
-      // Ensure we have a valid audio element
       if (!audioRefs.current[index]) {
         console.log(`Creating new audio element for segment ${index}`);
-        // Create a new audio element if it doesn't exist
         const newAudio = new Audio();
         audioRefs.current[index] = newAudio;
         
-        // Add event listeners for autoplay
         newAudio.addEventListener('ended', () => {
           if (autoplay && index < scriptSegments.length - 1) {
             setTimeout(() => {
               setCurrentlyPlaying(index + 1);
               playSegment(index + 1);
-            }, 500); // Small delay between segments
+            }, 500); 
           } else if (index === scriptSegments.length - 1) {
             setCurrentlyPlaying(null);
           }
@@ -208,27 +222,21 @@ const CryptoNewsroom = () => {
         return;
       }
       
-      // Reset the audio element
       audioElement.pause();
       audioElement.currentTime = 0;
       
-      // Check if audio is already loaded for this element
       if (!audioLoaded[index] || audioElement.src !== audioUrl) {
-        // Set the source and load before playing
         audioElement.src = audioUrl;
         audioElement.load();
         
-        // Mark as loaded once it's ready
         audioElement.oncanplaythrough = () => {
           setAudioLoaded(prev => ({ ...prev, [index]: true }));
         };
         
-        // Wait a moment for the audio to load
         await new Promise(resolve => setTimeout(resolve, 300));
       }
       
       try {
-        // Play audio with error handling
         const playPromise = audioElement.play();
         if (playPromise !== undefined) {
           await playPromise;
@@ -238,14 +246,10 @@ const CryptoNewsroom = () => {
         console.error('Error playing audio:', error);
         showNotification('error', 'Failed to play audio. Trying alternative approach...');
         
-        // Try one more time with a fresh audio element
         try {
-          // Create a completely new audio element
           const freshAudio = new Audio(audioUrl);
-          // Replace the reference
           audioRefs.current[index] = freshAudio;
           
-          // Add event listeners for autoplay
           freshAudio.addEventListener('ended', () => {
             if (autoplay && index < scriptSegments.length - 1) {
               setTimeout(() => {
@@ -257,13 +261,11 @@ const CryptoNewsroom = () => {
             }
           });
           
-          // Try playing the fresh element
           await freshAudio.play();
           console.log(`Successfully playing audio for segment ${index} with fresh element`);
         } catch (secondError) {
           console.error('Second attempt also failed:', secondError);
           
-          // Move to next segment if autoplay is on after a delay
           if (autoplay && index < scriptSegments.length - 1) {
             setTimeout(() => {
               setCurrentlyPlaying(index + 1);
@@ -282,7 +284,6 @@ const CryptoNewsroom = () => {
 
   // Handle audio end events to support autoplay
   useEffect(() => {
-    // Set up audio end event handlers for autoplay
     scriptSegments.forEach((_, index) => {
       const audioElement = audioRefs.current[index];
       if (audioElement) {
@@ -291,7 +292,7 @@ const CryptoNewsroom = () => {
             setTimeout(() => {
               setCurrentlyPlaying(index + 1);
               playSegment(index + 1);
-            }, 500); // Small delay between segments
+            }, 500); 
           } else if (index === scriptSegments.length - 1) {
             setCurrentlyPlaying(null);
           }
@@ -317,30 +318,25 @@ const CryptoNewsroom = () => {
       showNotification('info', 'Loading audio files...');
       
       try {
-        // Set a loading timeout - if loading takes too long, continue anyway
         const loadingTimeout = setTimeout(() => {
           setLoading(false);
           showNotification('info', 'Continuing with available audio...');
-        }, 8000); // 8 seconds max wait time
+        }, 8000); 
         
-        // Ensure audio is preloaded
+        
         await preloadAudioSegments(scriptSegments);
         
-        // Clear the timeout if we finish loading before it fires
         clearTimeout(loadingTimeout);
         setLoading(false);
         
-        // Check if any audio was loaded successfully
         const hasAnyAudio = Object.values(audioLoaded).some(loaded => loaded);
         
         if (hasAnyAudio) {
           showNotification('success', 'Audio loaded successfully!');
           
-          // Start playing the first segment
           setCurrentlyPlaying(0);
           playSegment(0);
         } else {
-          // If no audio loaded, try direct playback anyway as a fallback
           showNotification('info', 'Limited audio available. Starting playback with best effort...');
           setCurrentlyPlaying(0);
           playSegment(0);
@@ -350,7 +346,6 @@ const CryptoNewsroom = () => {
         showNotification('error', 'Failed to load all audio segments. Playing with available audio.');
         setLoading(false);
         
-        // Try to play anyway as a fallback
         setCurrentlyPlaying(0);
         playSegment(0);
       }
@@ -358,7 +353,6 @@ const CryptoNewsroom = () => {
   };
 
   const resetAllAudio = () => {
-    // Stop all playing audio
     audioRefs.current.forEach(audio => {
       if (audio) {
         audio.pause();
@@ -372,12 +366,10 @@ const CryptoNewsroom = () => {
     resetAllAudio();
   };
 
-  // Add component unmount cleanup
   useEffect(() => {
     return () => {
       resetAllAudio();
       
-      // Clean up blob URLs
       Object.values(audioBlobUrls).forEach(url => {
         try {
           URL.revokeObjectURL(url);
@@ -388,7 +380,6 @@ const CryptoNewsroom = () => {
     };
   }, [audioBlobUrls]);
 
-  // Function to download a single audio file
   const downloadAudio = async (segment: EnhancedScriptSegment, index: number) => {
     const audioUrl = await getSegmentAudioUrl(segment, index);
     if (!audioUrl) {
@@ -397,11 +388,9 @@ const CryptoNewsroom = () => {
       return;
     }
 
-    // Create a download link
     const downloadLink = document.createElement('a');
     downloadLink.href = audioUrl;
     
-    // Format: character_1_(audio num)
     const characterNum = segment.speaker === 'Alex' ? '1' : '2';
     const fileName = `${segment.speaker.toLowerCase()}_${characterNum}_${index + 1}.mp3`;
     
@@ -409,7 +398,6 @@ const CryptoNewsroom = () => {
     document.body.appendChild(downloadLink);
     downloadLink.click();
     
-    // Clean up
     setTimeout(() => {
       document.body.removeChild(downloadLink);
     }, 100);
@@ -417,7 +405,6 @@ const CryptoNewsroom = () => {
     showNotification('success', `Downloaded ${fileName}`);
   };
 
-  // Function to download all audio files as individual MP3s
   const downloadAllAsMp3 = async () => {
     setDownloadingAll(true);
     showNotification('info', 'Downloading all MP3 files...');
@@ -428,11 +415,9 @@ const CryptoNewsroom = () => {
         segment.success || getSegmentAudioUrl(segment, index) !== null
       ).length;
       
-      // Loop through all segments and download each one with a slight delay
       for (let i = 0; i < scriptSegments.length; i++) {
         const segment = scriptSegments[i];
         if (segment.success || getSegmentAudioUrl(segment, i) !== null) {
-          // Wait a bit between downloads to prevent browser throttling
           await new Promise(resolve => setTimeout(resolve, 300));
           
           try {
@@ -479,7 +464,6 @@ const CryptoNewsroom = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      {/* Notification Toast Container */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
         {notifications.map(notification => (
           <div 
@@ -505,13 +489,11 @@ const CryptoNewsroom = () => {
       </div>
       <div className="max-w-4xl mx-auto">
         <div className="bg-white shadow-xl rounded-lg overflow-hidden">
-          {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
             <h1 className="text-2xl font-bold text-white">Crypto Daily Newsroom</h1>
             <p className="text-blue-100 mt-1">The latest cryptocurrency news and analysis</p>
           </div>
           
-          {/* Controls */}
           <div className="border-b border-gray-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center space-x-4">
               <button 
@@ -549,7 +531,6 @@ const CryptoNewsroom = () => {
             </div>
           </div>
           
-          {/* Script segments */}
           <div className="divide-y divide-gray-200">
             {scriptSegments.map((segment, index) => {
               const hasAudio = segment.success || getSegmentAudioUrl(segment, index) !== null;
@@ -631,7 +612,6 @@ const CryptoNewsroom = () => {
             })}
           </div>
           
-          {/* Download All buttons */}
           <div className="border-t border-gray-200 px-6 py-4 flex flex-wrap justify-center gap-4">
             <button
               onClick={downloadAllAsMp3}
@@ -649,7 +629,6 @@ const CryptoNewsroom = () => {
             </button>
           </div>
           
-          {/* Footer */}
           <div className="bg-gray-50 px-6 py-4 text-sm text-gray-500 text-center">
             Powered by ElevenLabs AI voice technology
           </div>
