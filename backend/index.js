@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import sessionRoutes from './routes/sessions.js';
+import topicsRoutes from './routes/topics.js';
+import tweetsRoutes from './routes/tweets.js';
+import openaiRoutes from './routes/openai.js';
 import { initStorage } from './utils/audioStorage.js';
 
 // Load environment variables
@@ -33,6 +36,15 @@ app.get('/', (req, res) => {
 
 // Session routes
 app.use('/sessions', sessionRoutes);
+
+// Topics routes
+app.use('/autonome', topicsRoutes);
+
+// Tweets routes
+app.use('/tweetapi', tweetsRoutes);
+
+// OpenAI routes
+app.use('/openai', openaiRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
