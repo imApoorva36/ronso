@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { cryptoNewsScript, ScriptSegment } from './cryptoScript';
 import axios from 'axios';
@@ -56,10 +56,12 @@ const CryptoNewsroom = () => {
   const [scriptData, setScriptData] = useState<any>(null);
   const [audioLoaded, setAudioLoaded] = useState<Record<number, boolean>>({});
   const [summary, setSummary] = useState<string | null>(null);
+  const [tweetData, setTweetData] = useState<any>(null);
   
   const audioRefs = useRef<Array<HTMLAudioElement | null>>([]);
   const notificationIdCounter = useRef(0);
   const audioLoadedRef = useRef(false);
+  const tweetIntervalRef = useRef<number | null>(null);
 
   // Function to show a notification
   const showNotification = (type: NotificationType, message: string) => {
@@ -239,6 +241,45 @@ const CryptoNewsroom = () => {
       setIsLoadingAudio(false);
     }
   };
+
+  // Function to fetch the latest tweet for the session
+  const fetchLatestTweet = async (sessionId: string) => {
+    try {
+      console.log(`Fetching latest tweet for session: ${sessionId}`);
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/tweetapi/tweets/session/${sessionId}`
+      );
+      
+      console.log('Latest tweet data:', response.data);
+      setTweetData(response.data);
+    } catch (error) {
+      console.error('Error fetching latest tweet:', error);
+    }
+  };
+
+  // Set up interval to fetch tweet data every 16 minutes
+  useEffect(() => {
+    if (sessionId) {
+      // Fetch immediately on component mount
+      fetchLatestTweet(sessionId);
+      
+      // Set up interval (16 minutes = 960000 ms)
+      const intervalId = window.setInterval(() => {
+        fetchLatestTweet(sessionId);
+      }, 960000);
+      
+      // Store interval ID in ref
+      tweetIntervalRef.current = intervalId;
+      
+      // Clean up interval on component unmount
+      return () => {
+        if (tweetIntervalRef.current !== null) {
+          window.clearInterval(tweetIntervalRef.current);
+          tweetIntervalRef.current = null;
+        }
+      };
+    }
+  }, [sessionId]);
 
   // Set up audio element refs and event listeners for autoplay
   useEffect(() => {
