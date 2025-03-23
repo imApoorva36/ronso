@@ -159,37 +159,49 @@ export const loadAudioFromIPFS = async (
 
     console.log(`Loading audio from IPFS: ${ipfsUrl}`);
 
-    const { data, contentType } = await getAudioFromIPFS(ipfsUrl);
+    try {
+      const { data, contentType } = await getAudioFromIPFS(ipfsUrl);
 
-    // Store the fetched data in our local cache
+      if (!data) {
+        console.error(`No data returned from IPFS for ${speaker} segment ${segmentIndex}`);
+        return false;
+      }
 
-    console.log(contentType)
+      console.log(contentType);
 
-    const buffer = await data?.arrayBuffer();
-    const blobUrl = createAndStoreBlobUrl(buffer);
+      const buffer = await data.arrayBuffer();
+      const blobUrl = createAndStoreBlobUrl(buffer);
 
-    // Check if this segment is already in audioDataStore
-    const existingIndex = audioDataStore.findIndex(
-      data => data.speaker === speaker && data.segmentIndex === segmentIndex
-    );
+      // Check if this segment is already in audioDataStore
+      const existingIndex = audioDataStore.findIndex(
+        data => data.speaker === speaker && data.segmentIndex === segmentIndex
+      );
 
-    if (existingIndex >= 0) {
-      // Update existing entry
-      audioDataStore[existingIndex].buffer = buffer;
-      audioDataStore[existingIndex].ipfsCid = ipfsUrl.split('/').pop();
-      audioDataStore[existingIndex].blobUrl = blobUrl;
-    } else {
-      // Add new entry
-      audioDataStore.push({
-        buffer,
-        speaker,
-        segmentIndex,
-        ipfsCid: ipfsUrl.split('/').pop(),
-        blobUrl
-      });
+      if (existingIndex >= 0) {
+        // Update existing entry
+        audioDataStore[existingIndex].buffer = buffer;
+        audioDataStore[existingIndex].ipfsCid = ipfsUrl.split('/').pop();
+        audioDataStore[existingIndex].blobUrl = blobUrl;
+      } else {
+        // Add new entry
+        audioDataStore.push({
+          buffer,
+          speaker,
+          segmentIndex,
+          ipfsCid: ipfsUrl.split('/').pop(),
+          blobUrl
+        });
+      }
+
+      return true;
+    } catch (error) {
+      // Handle specific IPFS errors
+      const err = error as ErrorWithName;
+      if (err.name === 'AuthenticationError') {
+        console.error(`Authentication error accessing IPFS: ${err.message}`);
+      }
+      throw error; // Re-throw to be caught by the outer catch
     }
-
-    return true;
   } catch (error) {
     console.error(`Error in loadAudioFromIPFS for ${speaker} segment ${segmentIndex}:`, error);
     return false;
@@ -309,14 +321,21 @@ export const convertTextToSpeech = async (
 
   // First check if we already have this audio on IPFS
   const ipfsUrl = getIPFSAudioUrl(speaker, segmentIndex);
+  
   if (ipfsUrl) {
     console.log(`Audio already exists on IPFS, loading instead of regenerating`);
-    const loaded = await loadAudioFromIPFS(speaker, segmentIndex);
-    if (loaded) {
-      return true;
+    try {
+      const loaded = await loadAudioFromIPFS(speaker, segmentIndex);
+      if (loaded) {
+        return true;
+      }
+      console.log('Failed to load from IPFS, falling back to generation');
+      // If loading failed, continue with generation
+    } catch (error) {
+      console.error(`Error loading from IPFS: ${error}`);
+      console.log('IPFS loading error, falling back to generation');
+      // Continue with generation on error
     }
-    console.log('Failed to load from IPFS, falling back to generation');
-    // If loading failed, continue with generation
   }
 
   console.log(`Text content (first 50 chars): ${text.substring(0, 50)}...`);
@@ -491,7 +510,10 @@ export const generateFullConversation = async (
   try {
     console.log(`Generating full conversation with ${segments.length} segments`);
     const results: Array<{ speaker: string; text: string; success: boolean; segmentIndex: number }> = [];
-    console.log(segments)
+    
+    // Use JSON.stringify for proper array logging instead of toString()
+    console.log(JSON.stringify(segments));
+    
     for (let i = 0; i < segments.length; i++) {
       const segment = segments[i];
       console.log(`Processing segment ${i} for speaker: ${segment.speaker}`);
@@ -507,7 +529,12 @@ export const generateFullConversation = async (
       
       // If not preloaded, generate it
       if (!success) {
-        success = await convertTextToSpeech(segment.text, segment.speaker, i);
+        try {
+          success = await convertTextToSpeech(segment.text, segment.speaker, i);
+        } catch (error) {
+          console.error(`Error generating speech for segment ${i}:`, error);
+          success = false;
+        }
       } else {
         console.log(`Using preloaded audio for ${segment.speaker} segment ${i}`);
       }
