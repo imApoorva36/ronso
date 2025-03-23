@@ -42,7 +42,7 @@ Ronso transforms how the crypto community engages with complex topics by:
 
 ## System Architecture
 
-[Architecture Diagram Goes Here]
+![diagram-export-3-23-2025-6_23_36-PM](https://github.com/user-attachments/assets/86c463c8-64a1-42c4-b3b9-26016480164a)
 
 ## Features
 
