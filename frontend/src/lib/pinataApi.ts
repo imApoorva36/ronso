@@ -6,7 +6,7 @@ import { PinataSDK } from 'pinata';
 // Initialize Pinata client with JWT from environment variables
 const PINATA_JWT = import.meta.env.VITE_PINATA_JWT || import.meta.env.VITE_PINATA_JWT;
 // You can replace this with your specific gateway if you have one
-const PINATA_GATEWAY = 'jade-bitter-duck-676.mypinata.cloud';
+const PINATA_GATEWAY = "amber-perfect-mollusk-742.mypinata.cloud"
 
 console.log('Pinata API initialized:', PINATA_JWT ? 'JWT present' : 'JWT missing');
 
@@ -153,7 +153,8 @@ export const uploadAudioToIPFS = async (
     }
 
     const { speaker, segmentIndex, conversationId } = metadata;
-    const fileName = `${speaker.toLowerCase()}_segment_${segmentIndex}.mp3`;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `${speaker.toLowerCase()}_segment_${segmentIndex}_${timestamp}.mp3`;
 
     // Check if we already have this audio file in cache
     const cacheKey = `${speaker}_${segmentIndex}`;
@@ -171,6 +172,7 @@ export const uploadAudioToIPFS = async (
     const keyvalues: Record<string, string> = {
       speaker,
       segmentIndex: segmentIndex.toString(),
+      timestamp: timestamp,
     };
 
     if (conversationId) {

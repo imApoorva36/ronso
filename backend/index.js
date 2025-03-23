@@ -1,12 +1,25 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import sessionRoutes from './routes/sessions.js';
+import { initStorage } from './utils/audioStorage.js';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
+
+// Initialize storage
+(async () => {
+  try {
+    await initStorage();
+    console.log('Storage initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize storage:', error);
+    process.exit(1);
+  }
+})();
 
 // Middleware
 app.use(cors());
@@ -17,6 +30,9 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
+
+// Session routes
+app.use('/sessions', sessionRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
