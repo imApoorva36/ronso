@@ -51,7 +51,6 @@ const SessionList = () => {
       <div className="w-64 border-r border-gray-800 p-4 flex flex-col justify-between">
         <div className="space-y-6">
           <div className="p-2 flex justify-between items-center">
-            <XIcon className="h-6 w-6" />
             <AuthStatus />
           </div>
 
@@ -73,7 +72,7 @@ const SessionList = () => {
 
         <button 
           onClick={createNewSession}
-          className="bg-blue-500 text-white rounded-full py-3 px-4 font-bold w-full"
+          className="bg-blue-500 text-white rounded-full py-3 px-4 font-bold w-full cursor-pointer"
         >
           Create Newsroom
         </button>
@@ -112,7 +111,7 @@ const SessionList = () => {
                     <div className="flex items-center">
                       <span className="font-bold">{session.name}</span>
                       <span className="text-gray-500 ml-2">
-                        · {new Date(session.createdAt).toLocaleDateString()}
+                        · {new Date(session.createdAt).toLocaleString()}
                       </span>
                     </div>
                     <div className="mt-2">

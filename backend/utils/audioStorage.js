@@ -3,7 +3,7 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 // Storage paths
-const STORAGE_DIR = path.join(process.cwd(), 'backend/storage');
+const STORAGE_DIR = path.join(process.cwd(), 'storage');
 const SESSIONS_DIR = path.join(STORAGE_DIR, 'sessions');
 
 // Initialize storage
