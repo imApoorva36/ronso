@@ -94,7 +94,7 @@ router.post('/tweets', async (req, res) => {
     const payload = {
         text: text,
         poll: {
-            duration_minutes: 30,
+            duration_minutes: 1440,
             options: ['yes', 'no']
         }
     }

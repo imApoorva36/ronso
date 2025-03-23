@@ -730,24 +730,6 @@ const CryptoNewsroom = () => {
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
               </svg>
             </button>
-            <button
-              onClick={toggleAutoplay}
-              className={`p-2 rounded-full transition-colors ${
-                autoplay ? "bg-green-600 hover:bg-green-700" : "bg-gray-600 hover:bg-gray-700"
-              }`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 11-16 0 8 8 0 0116 0zM1 8a1 1 0 01-1-1V5a1 1 0 012 0v2a1 1 0 001 1zm4-1a1 1 0 00-1 1V8a1 1 0 012 0v2a1 1 0 001 1zm4-1a1 1 0 00-1 1V8a1 1 0 012 0v2a1 1 0 001 1z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <button
-              onClick={resetAllAudio}
-              className="p-2 bg-gray-600 rounded-full hover:bg-gray-700 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4 6a2 2 0 00-2 2v4a2 2 0 110 4v-4a2 2 0 012-2zm3 0a2 2 0 00-2 2v4a2 2 0 110 4v-4a2 2 0 012-2zm3 0a2 2 0 00-2 2v4a2 2 0 110 4v-4a2 2 0 012-2z" clipRule="evenodd" />
-              </svg>
-            </button>
           </div>
         </div>
         
