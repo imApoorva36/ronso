@@ -1,0 +1,31 @@
+{
+  "sessionId": "76b257f1-13e0-436a-998c-a6e11ad62c91",
+  "name": "Newsroom 2025-03-23",
+  "createdAt": "2025-03-23T11:55:50.398Z",
+  "segments": [
+    {
+      "segmentId": "1e566f7c-b974-40c8-8994-748fb94ffd80",
+      "speaker": "Morgan",
+      "text": "However, the scale of corporate influence can skew the market dynamics, where attention and capital are disproportionately funneled towards branded NFTs. This could marginalize independent artists who lack the marketing power of a multinational corporation. Moreover, the entry of these corporations often involves centralized platforms and blockchains that compromise on the ideals of decentralization. For example, when corporations choose to mint NFTs on permissioned blockchains or those with reduced decentralization, they undermine the trustless nature that is fundamental to blockchain technology.",
+      "segmentIndex": "3",
+      "audioFilename": "1e566f7c-b974-40c8-8994-748fb94ffd80.mp3",
+      "createdAt": "2025-03-23T11:56:55.873Z"
+    },
+    {
+      "segmentId": "65fe654a-0469-4f1f-b7e3-e8d577d709d1",
+      "speaker": "Alex",
+      "text": "The key to navigating this evolution lies in fostering a balance where both corporations and independent creators can coexist. This involves supporting platforms that prioritize interoperability and open standards, allowing NFTs to be transferred across different ecosystems without losing their authenticity or value. Initiatives like the Ethereum-based Layer 2 solutions can help scale without sacrificing decentralization. Furthermore, by integrating decentralized identity solutions, major companies can ensure that creators are recognized and rewarded fairly, potentially setting a precedent for ethical and sustainable NFT ecosystems.",
+      "segmentIndex": "4",
+      "audioFilename": "65fe654a-0469-4f1f-b7e3-e8d577d709d1.mp3",
+      "createdAt": "2025-03-23T11:57:07.153Z"
+    },
+    {
+      "segmentId": "0e4b437c-50bd-49a2-898e-7d2f421daf37",
+      "speaker": "Morgan",
+      "text": "Ultimately, it is crucial for the NFT community to remain vigilant and ensure that the core values of decentralization and creativity are not overshadowed by commercial interests. This involves advocating for transparency in corporate NFT projects and supporting platforms that empower individual artists. As we look forward, the challenge will be to harness the growing interest in NFTs to foster an inclusive environment that respects the diverse voices and innovative potential that the technology was originally meant to unleash.",
+      "segmentIndex": "5",
+      "audioFilename": "0e4b437c-50bd-49a2-898e-7d2f421daf37.mp3",
+      "createdAt": "2025-03-23T11:57:15.664Z"
+    }
+  ]
+}
