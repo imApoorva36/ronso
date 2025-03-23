@@ -194,7 +194,10 @@ const CryptoNewsroom = () => {
                 // Post the tweet using the backend API
                 const tweetResponse = await axios.post(
                   `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/tweetapi/tweets`,
-                  { text: tweetText }
+                  { 
+                    text: tweetText,
+                    sessionId: activeSessionId 
+                  }
                 );
                 
                 console.log('Tweet posted successfully:', tweetResponse.data);
