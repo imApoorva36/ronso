@@ -1,7 +1,7 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { cryptoNewsScript, ScriptSegment } from './cryptoScript';
+import axios from 'axios';
 import { 
   generateFullConversation, 
   getOrCreateSession,
@@ -49,9 +49,13 @@ const CryptoNewsroom = () => {
   const [autoplay, setAutoplay] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<{name?: string, id?: string}>({}); 
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [downloadingAll, setDownloadingAll] = useState(false);
-  const [audioLoaded, setAudioLoaded] = useState<Record<number, boolean>>({});
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [topics, setTopics] = useState<string[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState<string>('');
+  const [scriptData, setScriptData] = useState<any>(null);
+  const [audioLoaded, setAudioLoaded] = useState<Record<number, boolean>>({});
+  const [summary, setSummary] = useState<string | null>(null);
   
   const audioRefs = useRef<Array<HTMLAudioElement | null>>([]);
   const notificationIdCounter = useRef(0);
@@ -140,19 +144,90 @@ const CryptoNewsroom = () => {
   const generateConversation = async (activeSessionId: string) => {
     setIsLoadingAudio(true);
     try {
-      const generatedSegments = await generateFullConversation(cryptoNewsScript, activeSessionId);
+      // First fetch topics from the backend
+      const topicsResponse = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/autonome/topics`);
+      console.log('Topics response:', topicsResponse.data);
       
-      // Convert to EnhancedScriptSegment
-      const enhancedSegments: EnhancedScriptSegment[] = generatedSegments.map(segment => ({
-        speaker: segment.speaker as 'Alex' | 'Morgan', // Type assertion for safety
-        text: segment.text,
-        success: segment.success,
-        segmentIndex: segment.segmentIndex,
-        audioUrl: segment.audioUrl
-      }));
-      
-      setScriptSegments(enhancedSegments);
-      audioLoadedRef.current = true;
+      if (topicsResponse.data && topicsResponse.data.suggestions && topicsResponse.data.suggestions.length > 0) {
+        // Select the first topic
+        const firstTopic = topicsResponse.data.suggestions[0];
+        setSelectedTopic(firstTopic);
+        
+        // Generate script using the selected topic
+        const scriptResponse = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/autonome/generate-script`, 
+          { topic: firstTopic }
+        );
+        
+        console.log('Script generation response:', scriptResponse.data);
+        setScriptData(scriptResponse.data);
+
+        // Make API request to /openai/summarize route with scriptResponse.data.script
+        if (scriptResponse.data && scriptResponse.data.script) {
+          try {
+            // Extract just the text content from each segment for summarization
+            const conversationText = scriptResponse.data.script
+              .map((segment: { speaker: string; text: string }) => `${segment.speaker}: ${segment.text}`)
+              .join('\n\n');
+            
+            // Send the conversation text to the summarize endpoint
+            const summaryResponse = await axios.post(
+              `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/openai/summarize`,
+              { text: conversationText }
+            );
+            
+            console.log('Summary response:', summaryResponse.data);
+            
+            // Store the summary in state if needed
+            if (summaryResponse.data && summaryResponse.data.summary) {
+              setSummary(summaryResponse.data.summary);
+              
+              // Create a tweet with the summary and topic
+              try {
+                // Truncate summary to 250 characters and add ellipsis if needed
+                const truncatedSummary = summaryResponse.data.summary.length > 250 
+                  ? summaryResponse.data.summary.substring(0, 250) + '...' 
+                  : summaryResponse.data.summary;
+                
+                const tweetText = `${truncatedSummary}`;
+                
+                // Post the tweet using the backend API
+                const tweetResponse = await axios.post(
+                  `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/tweetapi/tweets`,
+                  { text: tweetText }
+                );
+                
+                console.log('Tweet posted successfully:', tweetResponse.data);
+              } catch (error) {
+                console.error('Error posting tweet:', error);
+              }
+            }
+          } catch (error) {
+            console.error('Error getting summary:', error);
+          }
+        }
+
+        // Use the generated script if available, otherwise fall back to the default
+        const scriptToUse = scriptResponse.data && scriptResponse.data.script 
+          ? scriptResponse.data.script 
+          : cryptoNewsScript;
+        
+        const generatedSegments = await generateFullConversation(scriptToUse, activeSessionId);
+        
+        // Convert to EnhancedScriptSegment
+        const enhancedSegments: EnhancedScriptSegment[] = generatedSegments.map(segment => ({
+          speaker: segment.speaker as 'Alex' | 'Morgan', // Type assertion for safety
+          text: segment.text,
+          success: segment.success,
+          segmentIndex: segment.segmentIndex,
+          audioUrl: segment.audioUrl
+        }));
+        
+        setScriptSegments(enhancedSegments);
+        audioLoadedRef.current = true;
+      } else {
+        throw new Error('No topics received from backend');
+      }
     } catch (error) {
       console.error('Error generating conversation:', error);
       setError('Failed to generate audio. Please try again later.');
@@ -543,6 +618,7 @@ const CryptoNewsroom = () => {
         
         {/* Twitter Spaces Style Audio Box */}
         <div className="bg-gray-800 rounded-xl p-6 mb-6">
+          <p className="mb-4 text-center"><strong>Topic : </strong> {selectedTopic}</p>
           <div className="flex justify-around items-center py-8">
             {/* Alex */}
             <div className="flex flex-col items-center">
@@ -617,7 +693,7 @@ const CryptoNewsroom = () => {
               }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M10 18a8 8 0 11-16 0 8 8 0 0116 0zM1 8a1 1 0 01-1-1V5a1 1 0 012 0v2a1 1 0 001 1zm4-1a1 1 0 00-1 1V8a1 1 0 012 0v2a1 1 0 001 1zm4-1a1 1 0 00-1 1V8a1 1 0 012 0v2a1 1 0 001 1z" clipRule="evenodd" />
               </svg>
             </button>
             <button
@@ -625,7 +701,7 @@ const CryptoNewsroom = () => {
               className="p-2 bg-gray-600 rounded-full hover:bg-gray-700 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4 6a2 2 0 00-2 2v4a2 2 0 110 4v-4a2 2 0 012-2zm3 0a2 2 0 00-2 2v4a2 2 0 110 4v-4a2 2 0 012-2zm3 0a2 2 0 00-2 2v4a2 2 0 110 4v-4a2 2 0 012-2z" clipRule="evenodd" />
               </svg>
             </button>
           </div>
