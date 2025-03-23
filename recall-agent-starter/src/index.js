@@ -265,7 +265,8 @@ app.post('/generate-script', async (req, res) => {
     }
     
     const isUpdate = originalScript && pollResults;
-    console.log(`${isUpdate ? 'Update' : 'Generate'} script request for topic: "${topic}"`);
+    const hasPreviousScript = !!originalScript;
+    console.log(`${isUpdate ? 'Update' : hasPreviousScript ? 'Continue' : 'Generate'} script request for topic: "${topic}"`);
     
     // Find script generator character
     const scriptGenerator = characters['script_generator'];
@@ -299,13 +300,33 @@ app.post('/generate-script', async (req, res) => {
       
       if (isUpdate) {
         systemPrompt += "\n\nYou are updating a debate script based on audience poll results. Analyze the original script and the poll results, then create an improved version that addresses audience feedback.";
-        userPrompt = `Here is the original script about "${topic}":\n\n${JSON.stringify(originalScript)}\n\nHere are the poll results:\n\n${JSON.stringify(pollResults)}\n\nPlease create an updated version of the script that addresses the audience feedback. Format your response as a JSON object with the same structure as the original script.`;
+        userPrompt = `Create a NEW debate script that continues from the original script about "${topic}" based on poll results.
+
+Original script summary (DO NOT REPEAT THIS CONTENT):
+${JSON.stringify(originalScript.script.map(item => `${item.speaker}: ${item.text.substring(0, 40)}...`))}
+
+Poll results:
+- Pro arguments score: ${pollResults.proArgumentsScore}%
+- Con arguments score: ${pollResults.conArgumentsScore}%
+- Audience comments: ${JSON.stringify(pollResults.audienceComments)}
+
+Generate a NEW continuation script with fresh perspectives and arguments that builds on the poll results WITHOUT repeating any of the original content.
+Your response must be a complete JSON object with the topic and ONLY NEW script segments.`;
+      } else if (hasPreviousScript) {
+        systemPrompt += "\n\nYou are continuing a debate script. You should add new exchanges that build upon the existing dialogue without repeating any previous content.";
+        userPrompt = `Create a NEW debate script that continues from the original script about "${topic}".
+
+Original script summary (DO NOT REPEAT THIS CONTENT):
+${JSON.stringify(originalScript.script.map(item => `${item.speaker}: ${item.text.substring(0, 40)}...`))}
+
+Generate a NEW continuation script with fresh perspectives and arguments WITHOUT repeating any of the original content.
+Your response must be a complete JSON object with the topic and ONLY NEW script segments.`;
       } else {
         userPrompt = `Generate a debate script about: ${topic}`;
       }
       
       // Make an API call to OpenAI
-      console.log(`Calling OpenAI API for script ${isUpdate ? 'update' : 'generation'} with key: ${process.env.OPENAI_API_KEY?.substring(0, 10)}...`);
+      console.log(`Calling OpenAI API for script ${isUpdate ? 'update' : hasPreviousScript ? 'continuation' : 'generation'} with key: ${process.env.OPENAI_API_KEY?.substring(0, 10)}...`);
       console.log(`Using model: ${process.env.MEDIUM_OPENAI_MODEL || "gpt-4o"}`);
       
       const completion = await openai.chat.completions.create({
@@ -333,6 +354,32 @@ app.post('/generate-script', async (req, res) => {
       // Parse JSON response
       try {
         const scriptData = JSON.parse(responseText);
+        
+        // If we're continuing from an original script, verify we're not repeating content
+        if (hasPreviousScript && scriptData.script && Array.isArray(scriptData.script) && originalScript.script) {
+          console.log("Checking for duplicate content with original script");
+          
+          // Create a new array with unique content only
+          const originalTexts = originalScript.script.map(item => item.text);
+          const filteredScript = scriptData.script.filter(item => !originalTexts.includes(item.text));
+          
+          console.log(`Original script had ${originalScript.script.length} segments`);
+          console.log(`Received ${scriptData.script.length} segments, ${filteredScript.length} are unique`);
+          
+          // If filtering removed everything, there was a problem
+          if (filteredScript.length === 0 && scriptData.script.length > 0) {
+            console.error("All generated content matched original script - generating fallback");
+            scriptData.script = [
+              { speaker: "speaker1", text: `Here's a new perspective on ${topic} that builds on our previous discussion.` },
+              { speaker: "speaker2", text: `I'd like to offer a counterpoint to that perspective by examining recent developments.` }
+            ];
+            scriptData.note = "Content appears to be duplicative - fallback provided";
+          } else {
+            // Use filtered script
+            scriptData.script = filteredScript;
+          }
+        }
+        
         return res.status(200).json(scriptData);
       } catch (parseError) {
         console.error("Error parsing script JSON:", parseError);
