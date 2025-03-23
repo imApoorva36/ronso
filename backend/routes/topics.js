@@ -19,7 +19,7 @@ console.log('Topics storage directory initialized:', TOPICS_DIR);
 console.log('Scripts storage directory initialized:', SCRIPTS_DIR);
 
 // API configuration
-const API_BASE_URL = 'https://autonome.alt.technology/ronso-uaigyc';
+const API_BASE_URL = 'https://autonome.alt.technology/ronso-picvnz';
 const API_USERNAME = process.env.API_USERNAME || ''; 
 const API_PASSWORD = process.env.API_PASSWORD || '';
 
