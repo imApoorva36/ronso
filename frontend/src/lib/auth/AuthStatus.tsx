@@ -12,11 +12,11 @@ export default function AuthStatus() {
     return (
       <div className="flex items-center gap-3">
         <div className="text-sm text-gray-400">
-            {user?.email?.address ? (
-              <span>{user.email.address}</span>
-            ) : (
-              <span>{user?.wallet?.address}</span>
-            )}
+          {user?.email?.address ? (
+            <span>{user.email.address.slice(0, 9)}...</span>
+          ) : (
+            <span>{user?.wallet?.address?.slice(0, 9)}...</span>
+          )}
         </div>
         <button
           onClick={() => logout()}

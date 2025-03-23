@@ -168,8 +168,14 @@ export const loadAudioFromIPFS = async (
       }
 
       console.log(contentType);
-
-      const buffer = await data.arrayBuffer();
+      let buffer;
+      // Type assertion to tell TypeScript that data is a Blob
+      if (data instanceof Blob) {
+        buffer = await data.arrayBuffer();
+      } else {
+        console.error('Expected data to be a Blob but got:', typeof data);
+        return false;
+      }
       const blobUrl = createAndStoreBlobUrl(buffer);
 
       // Check if this segment is already in audioDataStore
