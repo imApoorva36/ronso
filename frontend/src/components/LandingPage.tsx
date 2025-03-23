@@ -253,7 +253,7 @@ const LandingPage = () => {
             <p className="text-gray-400 max-w-lg mx-auto">Proudly supported by leading organizations in the blockchain and AI ecosystem</p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 items-center justify-items-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
             {/* ETHGlobal */}
             <a href="https://ethglobal.com" target="_blank" rel="noopener noreferrer" className="bg-gray-900/80 p-5 rounded-xl hover:bg-gray-800 transition-all duration-300 flex flex-col items-center justify-center h-32 w-full border border-gray-700 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-900/20 group">
               <div className="h-14 w-full flex items-center justify-center mb-3">
@@ -300,19 +300,7 @@ const LandingPage = () => {
                 />
               </div>
               <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors duration-300">Nethermind</h3>
-            </a>
-            
-            {/* Privy */}
-            <a href="https://privy.io" target="_blank" rel="noopener noreferrer" className="bg-gray-900/80 p-5 rounded-xl hover:bg-gray-800 transition-all duration-300 flex flex-col items-center justify-center h-32 w-full border border-gray-700 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-900/20 group">
-              <div className="h-14 w-full flex items-center justify-center mb-3">
-                <img 
-                  src={privyLogo} 
-                  alt="Privy" 
-                  className="h-12 max-w-full object-contain"
-                />
-              </div>
-              <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors duration-300">Privy</h3>
-            </a>
+            </a>            
           </div>
         </div>
       </section>
