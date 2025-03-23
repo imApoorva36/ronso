@@ -1,5 +1,6 @@
 import { IAgentRuntime, Memory, Provider, State, ServiceType, elizaLogger } from '@elizaos/core';
 import { RecallService } from '../services/recall.service.ts';
+import { firecrawlResearchProvider } from './firecrawl.ts';
 
 export const recallCotProvider: Provider = {
   get: async (
@@ -21,3 +22,6 @@ export const recallCotProvider: Provider = {
     }
   },
 };
+
+// Export the firecrawl research provider
+export { firecrawlResearchProvider };

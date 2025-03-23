@@ -1,0 +1,19 @@
+node_modules
+npm-debug.log
+.env.example
+data/
+content_cache/
+.git/
+.github/
+.vscode/
+**/.DS_Store
+**/__pycache__/
+*.log
+scripts/
+docker-*.ps1
+docker-*.sh
+
+# Keep these important files
+!src/index.js
+!characters/ronso/
+!.env 
