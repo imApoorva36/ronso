@@ -1,10 +1,13 @@
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import './App.css';
-import TweetList from './components/TweetList';
 import CryptoNewsroom from './components/CryptoNewsroom/CryptoNewsroom';
 import { getAllSessions, getOrCreateSession } from './lib/audioApi';
-import { Home, Search, Bell, Mail, Bookmark, Users, User, MoreHorizontal, XIcon } from "lucide-react";
+import { Home, Search, Users, XIcon } from "lucide-react";
+import LandingPage from './components/LandingPage';
+import PrivyProvider from './lib/auth/PrivyProvider';
+import RequireAuth from './lib/auth/RequireAuth';
+import AuthStatus from './lib/auth/AuthStatus';
 
 // Session list component
 const SessionList = () => {
@@ -47,15 +50,16 @@ const SessionList = () => {
       {/* Left Sidebar */}
       <div className="w-64 border-r border-gray-800 p-4 flex flex-col justify-between">
         <div className="space-y-6">
-          <div className="p-2">
+          <div className="p-2 flex justify-between items-center">
             <XIcon className="h-6 w-6" />
+            <AuthStatus />
           </div>
 
           <nav className="space-y-4">
-            <a href="#" className="flex items-center gap-4 text-xl hover:bg-gray-900 p-2 rounded-full">
+            <Link to="/" className="flex items-center gap-4 text-xl hover:bg-gray-900 p-2 rounded-full">
               <Home className="h-6 w-6" />
               <span>Home</span>
-            </a>
+            </Link>
             <a href="#" className="flex items-center gap-4 text-xl hover:bg-gray-900 p-2 rounded-full">
               <Search className="h-6 w-6" />
               <span>Explore</span>
@@ -141,16 +145,45 @@ const SessionList = () => {
   );
 };
 
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route 
+        path="/sessions" 
+        element={
+          <RequireAuth>
+            <SessionList />
+          </RequireAuth>
+        } 
+      />
+      <Route 
+        path="/crypto-newsroom/:sessionId" 
+        element={
+          <RequireAuth>
+            <CryptoNewsroom />
+          </RequireAuth>
+        } 
+      />
+      <Route 
+        path="/crypto-newsroom" 
+        element={
+          <RequireAuth>
+            <CryptoNewsroom />
+          </RequireAuth>
+        } 
+      />
+    </Routes>
+  );
+}
+
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<TweetList />} />
-        <Route path="/sessions" element={<SessionList />} />
-        <Route path="/crypto-newsroom/:sessionId" element={<CryptoNewsroom />} />
-        <Route path="/crypto-newsroom" element={<CryptoNewsroom />} />
-      </Routes>
-    </Router>
+    <PrivyProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </PrivyProvider>
   );
 }
 
