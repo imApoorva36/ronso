@@ -1,0 +1,23 @@
+{
+  "sessionId": "30c4feb8-fa84-463c-8f74-e287f4d8c9b5",
+  "name": "Newsroom 2025-03-23",
+  "createdAt": "2025-03-23T10:11:46.113Z",
+  "segments": [
+    {
+      "segmentId": "832602c0-5be3-4e6e-8d9c-9ac6f9feccf9",
+      "speaker": "Alex",
+      "text": "Welcome to Crypto Daily, your premier source for all things cryptocurrency! I'm Alex, joined today by my co-host Morgan. We've got some exciting developments to cover in today's show.",
+      "segmentIndex": "0",
+      "audioFilename": "832602c0-5be3-4e6e-8d9c-9ac6f9feccf9.mp3",
+      "createdAt": "2025-03-23T10:11:50.416Z"
+    },
+    {
+      "segmentId": "1ea2a601-81c5-48bb-9e9c-25b6797206ec",
+      "speaker": "Morgan",
+      "text": "Thanks, Alex! The crypto market has been on quite a rollercoaster lately. Bitcoin has shown remarkable resilience, hovering around the $62,000 mark despite recent regulatory challenges.",
+      "segmentIndex": "1",
+      "audioFilename": "1ea2a601-81c5-48bb-9e9c-25b6797206ec.mp3",
+      "createdAt": "2025-03-23T10:11:54.055Z"
+    }
+  ]
+}
